@@ -153,7 +153,7 @@ class Option(DbProperty):
             default = self.value
 
         while True:
-            status = raw_input('%s (%s) [%s/h]: ' % \
+            status = raw_input('%s (%s) [%s]: ' % \
                                (self.repr_name.capitalize(),
                                 default,
                                 '/'.join(map(
