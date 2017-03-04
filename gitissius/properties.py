@@ -314,6 +314,7 @@ class Date(DbProperty):
             self.value = common.now()
 
         elif self.editable:
-            super(CreatedOnProperty, self).interactive_edit(default=default)
+            #super(Date, self).interactive_edit()
+            raise NotImplementedError("date input and validation not implemented")
 
         return self.value
