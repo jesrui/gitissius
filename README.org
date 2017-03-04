@@ -83,7 +83,7 @@ Features
      - ~$ git issius list --filter=assigned_to:foo@example.com --sort=status
 
    - *List issues assigned everyone but 'foo@example.com'*
-     - ~$ git issius list --filter=assigned__not:foo@example.com
+     - ~$ git issius list --filter=assigned_to__not:foo@example.com
 
    - *List all issues but new or assigned*
      - ~$ git issius list --all --filter=status__not:new,status__not:assigned
