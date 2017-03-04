@@ -279,7 +279,7 @@ class IssueManager(object):
                 cmd = name.split("__")
                 name = cmd[0]
 
-                operators = [lambda x, y: x.lower() in y.lower()]
+                operators = [lambda x, y: y and x.lower() in y.lower()]
 
                 if "exact" in cmd[1:]:
                     operators += [lambda x, y: x == y]
