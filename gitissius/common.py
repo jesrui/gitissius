@@ -168,7 +168,7 @@ def print_issues(issues):
     assigned_to_size = twidth - title_size - id_size - status_size - type_size
     assigned_to_size -= 13 if not colorama else -5
 
-    fmt = "{id:%s.%ss} | {title:%s.%ss} | {assigned_to:%s.%ss} | {type:%s.%ss} | {status:%s.%ss} " % \
+    fmt = u"{id:%s.%ss} | {title:%s.%ss} | {assigned_to:%s.%ss} | {type:%s.%ss} | {status:%s.%ss} " % \
           (id_size, id_size,
            title_size, title_size,
            assigned_to_size, assigned_to_size,

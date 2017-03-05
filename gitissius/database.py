@@ -54,7 +54,7 @@ class DbObject(object):
         """
         dic = {}
         for prop in self._properties:
-            dic[prop.name] = prop.repr('value').encode('utf8')
+            dic[prop.name] = prop.repr('value')
 
         return dic
 

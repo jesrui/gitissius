@@ -2,6 +2,11 @@ import common
 import hashlib
 import readline
 import logging
+import sys, locale
+
+# The character encoding of the terminal
+# https://stackoverflow.com/questions/477061/how-to-read-unicode-input-and-compare-unicode-strings-in-python
+ENCODING = sys.stdin.encoding or locale.getpreferredencoding(True)
 
 readline.parse_and_bind('tab: complete')
 
@@ -28,7 +33,7 @@ class DbProperty(object):
                 }
 
     def __str__(self):
-        return self.value or ''
+        return self.value.encode(ENCODING) or ''
 
     @property
     def repr_name(self):
@@ -60,9 +65,8 @@ class DbProperty(object):
 
         readline.set_completer(common.SimpleCompleter(self.completion).complete)
         while True:
-            value = raw_input("%s (%s): " % \
-                              (self.repr_name, self.value)
-                              )
+            prompt = (u"%s (%s): " % (self.repr_name, self.value)).encode(ENCODING)
+            value = raw_input(prompt).decode(ENCODING)
 
             if not value:
                 value = self.value
@@ -123,9 +127,8 @@ class Option(DbProperty):
         self.options = options
 
     def repr(self, attr):
-        value = getattr(self, attr)
-
         if attr == 'value':
+            value = getattr(self, attr)
             if common.colorama:
                 value = self.options[value].get('color', '') + value.capitalize()
                 value += common.colorama.Style.RESET_ALL
@@ -153,16 +156,14 @@ class Option(DbProperty):
             default = self.value
 
         while True:
-            status = raw_input('%s (%s) [%s]: ' % \
+            prompt = (u'%s (%s) [%s]: ' % \
                                (self.repr_name.capitalize(),
                                 default,
                                 '/'.join(map(
                                     lambda x: self.options[x].get('shortcut',''),
-                                    self.options.keys()
-                                    )
-                                         )
-                                )
-                               )
+                                    self.options.keys())))
+                               ).encode(ENCODING)
+            status = raw_input(prompt).decode(ENCODING)
 
             if not status:
                 status = default
@@ -223,7 +224,7 @@ class Description(DbProperty):
                 print '-' * 5
 
             while True:
-                line = raw_input(" ")
+                line = raw_input(" ").decode(ENCODING)
 
                 if line == '.':
                     break
