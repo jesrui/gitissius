@@ -1,5 +1,8 @@
 set timeout 1
 
+set Id {[0-9a-f]{64}} ;# regexp for the issue id
+set C {(?:\e\[[0-9;]*m)*} ;# any number of ANSI color escape sequences from colorama
+
 set test "version"
 spawn $GI
 expect {
@@ -20,9 +23,27 @@ expect {
     -ex {Description (End with a line containing only '.'): }
         { send "this is the issue description\n.\n"; exp_continue }
     -ex {Create issue (y)? }	{ send "\n"; exp_continue }
-    -re {Created issue: [0-9a-f]{64}}	{ pass $test }
+    -re "Created issue: ($Id)"	{
+        set issue_id $expect_out(1,string)
+        pass $test
+    }
 
     timeout { fail "$test: timeout" }
     eof { fail "$test: EOF" }
+    default { fail $test }
 }
 
+set test "show issue"
+if {![info exists issue_id]} {
+    unresolved $test
+} else {
+    spawn $GI show $issue_id
+    expect {
+        -re "^${C}Id$C:$C ${issue_id}.*" { pass $test }
+
+        timeout { fail "$test: timeout" }
+        eof { fail "$test: EOF" }
+        default { fail $test }
+    }
+    unset issue_id
+}
