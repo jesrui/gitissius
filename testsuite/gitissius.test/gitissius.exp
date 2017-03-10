@@ -4,7 +4,7 @@ set Id {[0-9a-f]{64}} ;# regexp for the issue id
 set C {(?:\e\[[0-9;]*m)*} ;# any number of ANSI color escape sequences from colorama
 
 set test "version"
-spawn $GI
+spawn $PYTHON $GI
 expect {
     -re "Gitissius v0.1.6.*"	{ pass $test }
     timeout { fail "$test: timeout" }
@@ -12,7 +12,7 @@ expect {
 }
 
 set test "add issue"
-spawn $GI add
+spawn $PYTHON $GI add
 expect {
     -re {Title \(.*\): } { send "this is the issue title\n"; exp_continue }
     -ex {Type (bug) [b/f]: }	{ send "b\n"; exp_continue }
@@ -37,7 +37,7 @@ set test "show issue"
 if {![info exists issue_id]} {
     unresolved $test
 } else {
-    spawn $GI show $issue_id
+    spawn $PYTHON $GI show $issue_id
     expect {
         -re "^${C}Id$C:$C ${issue_id}.*" { pass $test }
 
