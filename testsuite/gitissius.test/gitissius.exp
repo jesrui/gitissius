@@ -1,0 +1,28 @@
+set timeout 1
+
+set test "version"
+spawn $GI
+expect {
+    -re "Gitissius v0.1.6.*"	{ pass $test }
+    timeout { fail "$test: timeout" }
+    eof { fail "$test: EOF" }
+}
+
+set test "add issue"
+spawn $GI add
+expect {
+    -re {Title \(.*\): } { send "this is the issue title\n"; exp_continue }
+    -ex {Type (bug) [b/f]: }	{ send "b\n"; exp_continue }
+    -ex {Severity (low) [h/m/l]: }	{ send "\n"; exp_continue }
+    -re {Reported From \(.*\): }	{ send "\n"; exp_continue }
+    -re {Assigned To \(None\): }	{ send "\n"; exp_continue }
+    -ex {Status (new) [a/n/c/i]: }	{ send "\n"; exp_continue }
+    -ex {Description (End with a line containing only '.'): }
+        { send "this is the issue description\n.\n"; exp_continue }
+    -ex {Create issue (y)? }	{ send "\n"; exp_continue }
+    -re {Created issue: [0-9a-f]{64}}	{ pass $test }
+
+    timeout { fail "$test: timeout" }
+    eof { fail "$test: EOF" }
+}
+

@@ -1,0 +1,31 @@
+proc ${tool}_init {args} {
+    puts tool_init
+
+    set env(LC_ALL) "C"
+
+    global tmpdir
+    if ![file isdirectory $tmpdir] {exec mkdir -p $tmpdir}
+
+    set repo $tmpdir/repo
+    assert_cmd_run git "init $repo"
+
+    cd $repo
+
+    set outfile [open "dummy" w]
+    puts $outfile "This is just a dummy file. By checking it in, we create the master branch"
+    close $outfile
+
+    assert_cmd_run git "add dummy"
+    assert_cmd_run git "commit -m init"
+}
+
+proc assert_cmd_run {cmd cmdargs} {
+    set state [remote_exec host $cmd $cmdargs]
+    set status [lindex $state 0]
+    set exec_output [lindex $state 1]
+    if {$status != 0} {
+        perror "command failed: $exec_output"
+    }
+    return $exec_output
+}
+

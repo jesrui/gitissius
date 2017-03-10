@@ -1,0 +1,5 @@
+set tool gitissius
+set srcdir [pwd]
+set tmpdir $srcdir/tmp
+set GI $srcdir/../build/lib/gitissius/gitissius.py
+
