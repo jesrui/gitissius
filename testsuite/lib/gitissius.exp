@@ -11,6 +11,10 @@ proc ${tool}_init {args} {
 
     cd $repo
 
+    global git_user_name git_user_email
+    assert_cmd_run git "config user.name \"$git_user_name\""
+    assert_cmd_run git "config user.email $git_user_email"
+
     set outfile [open "dummy" w]
     puts $outfile "This is just a dummy file. By checking it in, we create the master branch"
     close $outfile

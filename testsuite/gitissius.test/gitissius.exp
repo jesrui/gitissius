@@ -17,7 +17,7 @@ set iss(title)      {this is the issue title}
 set iss(severity)   {low}
 set iss(type)       {bug}
 set iss(author)     {}
-set iss(assing)     {}
+set iss(assign)     {}
 set iss(status)     {new}
 set iss(desc1)      {this is the first line of the issue description}
 set iss(desc2)      {this is the second line of the issue description}
@@ -30,8 +30,8 @@ expect {
         { send "[string index $iss(type) 0]\n"; exp_continue }
     -ex {Severity (low) [h/m/l]: }
         { send "[string index $iss(severity) 0]\n"; exp_continue }
-    -re {Reported From \(.*\): }	{ send "\n"; exp_continue }
-    -re {Assigned To \(None\): }	{ send "\n"; exp_continue }
+    -re {Reported From \(.*\): }	{ send "$iss(author)\n"; exp_continue }
+    -re {Assigned To \(None\): }	{ send "$iss(assign)\n"; exp_continue }
     -ex {Status (new) [a/n/c/i]: }
         { send "[string index $iss(status) 0]\n"; exp_continue }
     -ex {Description (End with a line containing only '.'): }
@@ -47,12 +47,15 @@ expect {
     default { fail $test }
 }
 
+set iss(author)     "$git_user_name <$git_user_email>"
+set iss(assign)     None
+
 set issue_template "^${C}Id$C:$C $C$issue_id$C\r
 ${C}Title$C:$C $C$iss(title)$C\r
 ${C}Type$C:$C $C[string totitle $iss(type)]$C\r
 ${C}Severity$C:$C $C[string totitle $iss(severity)]$C\r
-${C}Reported From$C:$C $C.*$C\r
-${C}Assigned To$C:$C ${C}None$C\r
+${C}Reported From$C:$C ${C}$iss(author)$C\r
+${C}Assigned To$C:$C ${C}$iss(assign)$C\r
 ${C}Created On$C:$C ${C}.*$C\r
 ${C}Updated On$C:$C ${C}.*$C\r
 ${C}Status$C:$C $C[string totitle $iss(status)]$C\r

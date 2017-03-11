@@ -3,4 +3,5 @@ set srcdir [pwd]
 set tmpdir $srcdir/tmp
 set GI $srcdir/../build/lib/gitissius/gitissius.py
 set PYTHON python2
-
+set git_user_name {Micky Mouse}
+set git_user_email micky.mouse@example.com
