@@ -41,10 +41,10 @@ expect {
     -ex {Severity (low) [h/m/l]: }
         { send "[string index $iss(severity) 0]\n"; exp_continue }
     -re {Reported From \(.*\): }	{ send "$iss(author)\n"; exp_continue }
-    -re {Assigned To \(None\): }	{ send "$iss(assign)\n"; exp_continue }
+    -ex {Assigned To (None): }	{ send "$iss(assign)\n"; exp_continue }
     -ex {Status (new) [a/n/c/i]: }
         { send "[string index $iss(status) 0]\n"; exp_continue }
-    -ex {Description (End with a line containing only '.'): }
+    -ex {Description (End with a line containing only '.'):}
         { send "$iss(desc1)\n$iss(desc2)\n.\n"; exp_continue }
     -ex {Create issue (y)? }	{ send "\n"; exp_continue }
     -re "Created issue: ($Id)"	{
