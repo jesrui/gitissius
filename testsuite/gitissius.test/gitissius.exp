@@ -1,4 +1,4 @@
-set timeout 10
+set timeout 30
 
 # regexp for the issue id
 set Id {[0-9a-f]{64}}
@@ -7,12 +7,15 @@ set C {(?:\e\[[0-9;]*m)*}
 
 ##############################################################################
 
+# Just to warm up and load python and all needed libraries
 set test "version"
 spawn $PYTHON $GI
 expect {
-    -re "Gitissius v0.1.6.*"	{ pass $test }
-    timeout { fail "$test: timeout" }
-    eof { fail "$test: EOF" }
+    -re "Gitissius v.*"	{ pass $test }
+
+    timeout     { fail "$test: timeout" }
+    eof         { fail "$test: EOF" }
+    default     { fail $test }
 }
 
 set iss(title)      {this is the issue title. It is so long that it will be trimmed by `git issuis list`}
@@ -23,6 +26,9 @@ set iss(assign)     {}
 set iss(status)     {new}
 set iss(desc1)      {this is the first line of the issue description}
 set iss(desc2)      {this is the second line of the issue description}
+
+# Now that python is loaded we can reduce the timeout.
+set timeout 3
 
 ##############################################################################
 
