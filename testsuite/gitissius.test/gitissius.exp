@@ -5,6 +5,8 @@ set Id {[0-9a-f]{64}}
 # regexp that match any number of consecutive ANSI color escape sequences from colorama
 set C {(?:\e\[[0-9;]*m)*}
 
+##############################################################################
+
 set test "version"
 spawn $PYTHON $GI
 expect {
@@ -13,7 +15,7 @@ expect {
     eof { fail "$test: EOF" }
 }
 
-set iss(title)      {this is the issue title}
+set iss(title)      {this is the issue title. It is so long that it will be trimmed by `git issuis list`}
 set iss(severity)   {low}
 set iss(type)       {bug}
 set iss(author)     {}
@@ -21,6 +23,8 @@ set iss(assign)     {}
 set iss(status)     {new}
 set iss(desc1)      {this is the first line of the issue description}
 set iss(desc2)      {this is the second line of the issue description}
+
+##############################################################################
 
 set test "add issue"
 spawn $PYTHON $GI add
@@ -46,6 +50,8 @@ expect {
     eof { fail "$test: EOF" }
     default { fail $test }
 }
+
+##############################################################################
 
 set iss(author)     "$git_user_name <$git_user_email>"
 set iss(assign)     None
@@ -76,5 +82,36 @@ if {![info exists issue_id]} {
         eof { fail "$test: EOF" }
         default { fail $test }
     }
-    unset issue_id
 }
+
+##############################################################################
+
+set SEP {\W+\|\W+} ;# field sepatator: " | "
+set listing_header "${C}ID${C}${SEP}${C}Title${C}${SEP}${C}Assigned To${C}${SEP}${C}Type${C}${SEP}${C}Status${C}"
+
+set issue_template [string map {"\n" ""} "
+$C[string range $issue_id 0 4]$C
+$SEP${C}(.*?)$C
+$SEP${C}$iss(assign)$C
+$SEP${C}[string totitle $iss(type)]$C
+$SEP${C}[string totitle $iss(status)]$C
+"]
+
+set test "list issues"
+spawn $PYTHON $GI list
+expect {
+    -re "$listing_header.*$issue_template" {
+        set got_title $expect_out(1,string)
+        if {[string equal -length [string length $got_title] \
+                $got_title $iss(title)]} {
+            pass $test
+        } else {
+            fail "$test: title mismatch"
+        }
+    }
+
+    timeout { fail "$test: timeout" }
+    eof { fail "$test: EOF" }
+    default { fail $test }
+}
+unset issue_id
