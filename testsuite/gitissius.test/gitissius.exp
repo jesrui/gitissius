@@ -92,6 +92,36 @@ ${C}Description$C:$C\r
 
 ##############################################################################
 
+set iss(comment1)      {this is the first line of the issue comment}
+set iss(comment2)      {this is the second line of the issue comment}
+
+set test "add issue comment"
+if {![info exists issue_id]} {
+    unresolved $test
+} else {
+    spawn $PYTHON $GI comment $issue_id
+
+    expect_after {
+        timeout         { fail "$test: timeout" }
+        eof             { fail "$test: EOF" }
+        default         { fail $test }
+    }
+
+    expect -re "${C}Commenting on:$C ${C}$iss(title)$C" {
+        expect -ex "Reported From \($iss(author)\): " {
+            send "\n"
+            expect -ex {Description (End with a line containing only '.'): } {
+                send "$iss(comment1)\n$iss(comment2)\n.\n"
+                expect -ex "Comment issue: $issue_id" { pass $test }
+            }
+        }
+    }
+
+    expect_after ;# clean up
+}
+
+##############################################################################
+
 set SEP {\W+\|\W+} ;# field sepatator: " | "
 set listing_header "${C}ID${C}${SEP}${C}Title${C}${SEP}${C}Assigned To${C}${SEP}${C}Type${C}${SEP}${C}Status${C}"
 
