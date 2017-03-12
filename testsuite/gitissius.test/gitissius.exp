@@ -62,7 +62,11 @@ expect {
 set iss(author)     "$git_user_name <$git_user_email>"
 set iss(assign)     None
 
-set issue_template "^${C}Id$C:$C $C$issue_id$C\r
+set test "show issue"
+if {![info exists issue_id]} {
+    unresolved $test
+} else {
+    set issue_template "^${C}Id$C:$C $C$issue_id$C\r
 ${C}Title$C:$C $C$iss(title)$C\r
 ${C}Type$C:$C $C[string totitle $iss(type)]$C\r
 ${C}Severity$C:$C $C[string totitle $iss(severity)]$C\r
@@ -76,10 +80,6 @@ ${C}Description$C:$C\r
   $C$iss(desc2)$C\r
 "
 
-set test "show issue"
-if {![info exists issue_id]} {
-    unresolved $test
-} else {
     spawn $PYTHON $GI show $issue_id
     expect {
         -re "$issue_template" {pass $test}
@@ -95,7 +95,11 @@ if {![info exists issue_id]} {
 set SEP {\W+\|\W+} ;# field sepatator: " | "
 set listing_header "${C}ID${C}${SEP}${C}Title${C}${SEP}${C}Assigned To${C}${SEP}${C}Type${C}${SEP}${C}Status${C}"
 
-set issue_template [string map {"\n" ""} "
+set test "list issues"
+if {![info exists issue_id]} {
+    unresolved $test
+} else {
+    set issue_template [string map {"\n" ""} "
 $C[string range $issue_id 0 4]$C
 $SEP${C}(.*?)$C
 $SEP${C}$iss(assign)$C
@@ -103,21 +107,21 @@ $SEP${C}[string totitle $iss(type)]$C
 $SEP${C}[string totitle $iss(status)]$C
 "]
 
-set test "list issues"
-spawn $PYTHON $GI list
-expect {
-    -re "$listing_header.*$issue_template" {
-        set got_title $expect_out(1,string)
-        if {[string equal -length [string length $got_title] \
-                $got_title $iss(title)]} {
-            pass $test
-        } else {
-            fail "$test: title mismatch"
+    spawn $PYTHON $GI list
+    expect {
+        -re "$listing_header.*$issue_template" {
+            set got_title $expect_out(1,string)
+            if {[string equal -length [string length $got_title] \
+                    $got_title $iss(title)]} {
+                pass $test
+            } else {
+                fail "$test: title mismatch"
+            }
         }
-    }
 
-    timeout { fail "$test: timeout" }
-    eof { fail "$test: EOF" }
-    default { fail $test }
+        timeout { fail "$test: timeout" }
+        eof { fail "$test: EOF" }
+        default { fail $test }
+    }
+    unset issue_id
 }
-unset issue_id
