@@ -122,6 +122,33 @@ if {![info exists issue_id]} {
 
 ##############################################################################
 
+set test "show issue with comments"
+if {![info exists issue_id]} {
+    unresolved $test
+} else {
+    set issue_template [string cat $issue_template \
+"${C}-----$C\r
+${C}Reported From$C:$C ${C}$iss(author)$C\r
+${C}Created On$C:$C ${C}.*$C\r
+${C}Description$C:$C\r
+  $C$iss(comment1)$C\r
+  $C$iss(comment2)$C\r
+${C}-----$C\r
+"]
+
+    spawn $PYTHON $GI show --all $issue_id
+
+    expect {
+        -re "$issue_template" {pass $test}
+
+        timeout { fail "$test: timeout" }
+        eof { fail "$test: EOF" }
+        default { fail $test }
+    }
+}
+
+##############################################################################
+
 set SEP {\W+\|\W+} ;# field sepatator: " | "
 set listing_header "${C}ID${C}${SEP}${C}Title${C}${SEP}${C}Assigned To${C}${SEP}${C}Type${C}${SEP}${C}Status${C}"
 
