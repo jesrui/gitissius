@@ -180,5 +180,28 @@ $SEP${C}[string totitle $iss(status)]$C
         eof { fail "$test: EOF" }
         default { fail $test }
     }
+}
+
+##############################################################################
+
+set test "delete issue"
+if {![info exists issue_id]} {
+    unresolved $test
+} else {
+    spawn $PYTHON $GI delete $issue_id
+
+    expect_after {
+        timeout         { fail "$test: timeout" }
+        eof             { fail "$test: EOF" }
+        default         { fail $test }
+    }
+
+    expect -re "Delete issue '$iss(title)' \\(y\\)\\? " {
+        send "y\n"
+        expect -re "${C}Deleted issue$C: $issue_id" { pass $test }
+    }
+
+    expect_after ;# clean up
+
     unset issue_id
 }
