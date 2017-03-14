@@ -70,8 +70,8 @@ set timeout 3
 
 set test "add issue"
 spawn $PYTHON $GI add
-set issue_id [edit_or_add_issue $test iss ""]
-if {$issue_id eq ""} {unset issue_id}
+set result [edit_or_add_issue $test iss ""]
+if {$result ne ""} {set issue_id $result}
 
 ##############################################################################
 
@@ -206,8 +206,7 @@ if {![info exists issue_id]} {
 } else {
     set iss(assign) {} ;# The input value is an empty string
     spawn $PYTHON $GI edit $issue_id
-    set issue_id [edit_or_add_issue $test iss $issue_id]
-    if {$issue_id eq ""} {unset issue_id}
+    edit_or_add_issue $test iss $issue_id
     # Restore value. The output representation of the empty string is `None`.
     set iss(assign) {None}
 }
@@ -240,13 +239,17 @@ if {![info exists issue_id]} {
 
 set test "list issues (empty list)"
 
-spawn $PYTHON $GI list
-expect {
-    -re "$listing_header.*${C}Total Issues: 0$C\r" { pass $test }
+if {[info exists issue_id]} {
+    unresolved $test
+} else {
+    spawn $PYTHON $GI list
+    expect {
+        -re "$listing_header.*${C}Total Issues: 0$C\r" { pass $test }
 
-    timeout     { fail "$test: timeout" }
-    eof         { fail "$test: EOF" }
-    default     { fail $test }
+        timeout     { fail "$test: timeout" }
+        eof         { fail "$test: EOF" }
+        default     { fail $test }
+    }
 }
 
 ##############################################################################
