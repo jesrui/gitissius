@@ -5,6 +5,42 @@ set Id {[0-9a-f]{64}}
 # regexp that match any number of consecutive ANSI color escape sequences from colorama
 set C {(?:\e\[[0-9;]*m)*}
 
+# Expect block for `git issius add` and `git issius edit`.
+# Execute an `add` command if issue_id is empty, `edit` if it is not empty.
+# If successful, it calls pass, otherwise it calls fail.
+# Return the issue_id just created or edited if successful, otherwise an empty string.
+proc edit_or_add_issue { test myiss issue_id } {
+    upvar $myiss iss
+    global Id
+
+    expect {
+        -re {Title \(.*\): } { send "$iss(title)\n"; exp_continue }
+        -ex {Type (bug) [b/f]: }
+            { send "[string index $iss(type) 0]\n"; exp_continue }
+        -ex {Severity (low) [h/m/l]: }
+            { send "[string index $iss(severity) 0]\n"; exp_continue }
+        -re {Reported From \(.*\): }	{ send "$iss(author)\n"; exp_continue }
+        -re {Assigned To \(.*\): }	{ send "$iss(assign)\n"; exp_continue }
+        -re {Status \(new\) \[.*\]: }
+            { send "[string index $iss(status) 0]\n"; exp_continue }
+        -ex {Description (End with a line containing only '.'):}
+            { send "$iss(desc1)\n$iss(desc2)\n.\n"; exp_continue }
+        -ex [expr {$issue_id eq {} ? {Create issue (y)? } : {Save changes (y)? }}]
+            { send "\n"; exp_continue }
+        -re [expr {$issue_id eq {} ? "Created issue: ($Id)" : "Edited issue: ($Id)"}] {
+            set issue_id $expect_out(1,string)
+            pass $test
+            return $issue_id
+        }
+
+        timeout     { fail "$test: timeout" }
+        eof         { fail "$test: EOF" }
+        default     { fail $test }
+    }
+
+    return {}
+}
+
 ##############################################################################
 
 # Just to warm up and load python and all needed libraries
@@ -34,28 +70,8 @@ set timeout 3
 
 set test "add issue"
 spawn $PYTHON $GI add
-expect {
-    -re {Title \(.*\): } { send "$iss(title)\n"; exp_continue }
-    -ex {Type (bug) [b/f]: }
-        { send "[string index $iss(type) 0]\n"; exp_continue }
-    -ex {Severity (low) [h/m/l]: }
-        { send "[string index $iss(severity) 0]\n"; exp_continue }
-    -re {Reported From \(.*\): }	{ send "$iss(author)\n"; exp_continue }
-    -ex {Assigned To (None): }	{ send "$iss(assign)\n"; exp_continue }
-    -ex {Status (new) [a/n/c/i]: }
-        { send "[string index $iss(status) 0]\n"; exp_continue }
-    -ex {Description (End with a line containing only '.'):}
-        { send "$iss(desc1)\n$iss(desc2)\n.\n"; exp_continue }
-    -ex {Create issue (y)? }	{ send "\n"; exp_continue }
-    -re "Created issue: ($Id)"	{
-        set issue_id $expect_out(1,string)
-        pass $test
-    }
-
-    timeout { fail "$test: timeout" }
-    eof { fail "$test: EOF" }
-    default { fail $test }
-}
+set issue_id [edit_or_add_issue $test iss ""]
+if {$issue_id eq ""} {unset issue_id}
 
 ##############################################################################
 
@@ -183,6 +199,20 @@ $SEP${C}[string totitle $iss(status)]$C
 }
 
 ##############################################################################
+
+set test "edit issue"
+if {![info exists issue_id]} {
+    unresolved $test
+} else {
+    set iss(assign) {} ;# The input value is an empty string
+    spawn $PYTHON $GI edit $issue_id
+    set issue_id [edit_or_add_issue $test iss $issue_id]
+    if {$issue_id eq ""} {unset issue_id}
+    # Restore value. The output representation of the empty string is `None`.
+    set iss(assign) {None}
+}
+
+#############################################################################
 
 set test "delete issue"
 if {![info exists issue_id]} {
