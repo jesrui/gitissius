@@ -7,21 +7,24 @@ set C {(?:\e\[[0-9;]*m)*}
 
 # Expect block for `git issius add` and `git issius edit`.
 # Execute an `add` command if issue_id is empty, `edit` if it is not empty.
+# myiss is a reference to the values to be entered for the issue.
+# myshow is a reference to the values expected to be prompted by the command.
 # If successful, it calls pass, otherwise it calls fail.
 # Return the issue_id just created or edited if successful, otherwise an empty string.
-proc edit_or_add_issue { test myiss issue_id } {
+proc edit_or_add_issue { test myiss myshow issue_id } {
     upvar $myiss iss
+    upvar $myshow show
     global Id
 
     expect {
-        -re {Title \(.*\): } { send "$iss(title)\n"; exp_continue }
-        -ex {Type (bug) [b/f]: }
+        -ex "Title ($show(title)): " { send "$iss(title)\n"; exp_continue }
+        -ex "Type ($show(type)) \[b/f\]: "
             { send "[string index $iss(type) 0]\n"; exp_continue }
-        -ex {Severity (low) [h/m/l]: }
+        -ex "Severity ($show(severity)) \[h/m/l\]: "
             { send "[string index $iss(severity) 0]\n"; exp_continue }
-        -re {Reported From \(.*\): }	{ send "$iss(author)\n"; exp_continue }
-        -re {Assigned To \(.*\): }	{ send "$iss(assign)\n"; exp_continue }
-        -re {Status \(new\) \[.*\]: }
+        -ex "Reported From ($show(author)): "	{ send "$iss(author)\n"; exp_continue }
+        -ex "Assigned To ($show(assign)): "	{ send "$iss(assign)\n"; exp_continue }
+        -re "Status \\($show(status)\\) \\\[.*\\\]: "
             { send "[string index $iss(status) 0]\n"; exp_continue }
         -ex {Description (End with a line containing only '.'):}
             { send "$iss(desc1)\n$iss(desc2)\n.\n"; exp_continue }
@@ -54,14 +57,27 @@ expect {
     default     { fail $test }
 }
 
+# The iss array contains the issue values entered on `git issius add`
+# or `edit`.
+# Empty strings are used to accept default values.
 set iss(title)      {this is the issue title. It is so long that it will be trimmed by `git issuis list`}
-set iss(severity)   {low}
-set iss(type)       {bug}
+set iss(severity)   {}
+set iss(type)       {}
 set iss(author)     {}
 set iss(assign)     {}
-set iss(status)     {new}
+set iss(status)     {}
 set iss(desc1)      {this is the first line of the issue description}
 set iss(desc2)      {this is the second line of the issue description}
+
+# The show array contains the issue values shown on the `git issius add`
+# or `edit` prompts and `show` and `list` commands.
+# (The values will be transformed as needed, e.g. capitalized)
+set show(title)      {None}
+set show(severity)   {low}
+set show(type)       {bug}
+set show(author)     {Micky Mouse <micky.mouse@example.com>}
+set show(assign)     {None}
+set show(status)     {new}
 
 # Now that python is loaded we can reduce the timeout.
 set timeout 3
@@ -70,30 +86,31 @@ set timeout 3
 
 set test "add issue"
 spawn $PYTHON $GI add
-set result [edit_or_add_issue $test iss ""]
+set result [edit_or_add_issue $test iss show ""]
 if {$result ne ""} {set issue_id $result}
 
 ##############################################################################
 
-set iss(author)     "$git_user_name <$git_user_email>"
-set iss(assign)     None
+set show(title)      $iss(title)
+set show(desc1)      $iss(desc1)
+set show(desc2)      $iss(desc2)
 
 set test "show issue"
 if {![info exists issue_id]} {
     unresolved $test
 } else {
     set issue_template "^${C}Id$C:$C $C$issue_id$C\r
-${C}Title$C:$C $C$iss(title)$C\r
-${C}Type$C:$C $C[string totitle $iss(type)]$C\r
-${C}Severity$C:$C $C[string totitle $iss(severity)]$C\r
-${C}Reported From$C:$C ${C}$iss(author)$C\r
-${C}Assigned To$C:$C ${C}$iss(assign)$C\r
+${C}Title$C:$C $C$show(title)$C\r
+${C}Type$C:$C $C[string totitle $show(type)]$C\r
+${C}Severity$C:$C $C[string totitle $show(severity)]$C\r
+${C}Reported From$C:$C ${C}$show(author)$C\r
+${C}Assigned To$C:$C ${C}$show(assign)$C\r
 ${C}Created On$C:$C ${C}.*$C\r
 ${C}Updated On$C:$C ${C}.*$C\r
-${C}Status$C:$C $C[string totitle $iss(status)]$C\r
+${C}Status$C:$C $C[string totitle $show(status)]$C\r
 ${C}Description$C:$C\r
-  $C$iss(desc1)$C\r
-  $C$iss(desc2)$C\r
+  $C$show(desc1)$C\r
+  $C$show(desc2)$C\r
 "
 
     spawn $PYTHON $GI show $issue_id
@@ -123,8 +140,8 @@ if {![info exists issue_id]} {
         default         { fail $test }
     }
 
-    expect -re "${C}Commenting on:$C ${C}$iss(title)$C" {
-        expect -ex "Reported From \($iss(author)\): " {
+    expect -re "${C}Commenting on:$C ${C}$show(title)$C" {
+        expect -ex "Reported From \($show(author)\): " {
             send "\n"
             expect -ex {Description (End with a line containing only '.'): } {
                 send "$iss(comment1)\n$iss(comment2)\n.\n"
@@ -138,17 +155,20 @@ if {![info exists issue_id]} {
 
 ##############################################################################
 
+set show(comment1) $iss(comment1)
+set show(comment2) $iss(comment2)
+
 set test "show issue with comments"
 if {![info exists issue_id]} {
     unresolved $test
 } else {
     set issue_template [string cat $issue_template \
 "${C}-----$C\r
-${C}Reported From$C:$C ${C}$iss(author)$C\r
+${C}Reported From$C:$C ${C}$show(author)$C\r
 ${C}Created On$C:$C ${C}.*$C\r
 ${C}Description$C:$C\r
-  $C$iss(comment1)$C\r
-  $C$iss(comment2)$C\r
+  $C$show(comment1)$C\r
+  $C$show(comment2)$C\r
 ${C}-----$C\r
 "]
 
@@ -175,9 +195,9 @@ if {![info exists issue_id]} {
     set issue_template [string map {"\n" ""} "
 $C[string range $issue_id 0 4]$C
 $SEP${C}(.*?)$C
-$SEP${C}$iss(assign)$C
-$SEP${C}[string totitle $iss(type)]$C
-$SEP${C}[string totitle $iss(status)]$C
+$SEP${C}$show(assign)$C
+$SEP${C}[string totitle $show(type)]$C
+$SEP${C}[string totitle $show(status)]$C
 "]
 
     spawn $PYTHON $GI list
@@ -185,7 +205,7 @@ $SEP${C}[string totitle $iss(status)]$C
         -re "$listing_header.*$issue_template" {
             set got_title $expect_out(1,string)
             if {[string equal -length [string length $got_title] \
-                    $got_title $iss(title)]} {
+                    $got_title $show(title)]} {
                 pass $test
             } else {
                 fail "$test: title mismatch"
@@ -204,11 +224,8 @@ set test "edit issue"
 if {![info exists issue_id]} {
     unresolved $test
 } else {
-    set iss(assign) {} ;# The input value is an empty string
     spawn $PYTHON $GI edit $issue_id
-    edit_or_add_issue $test iss $issue_id
-    # Restore value. The output representation of the empty string is `None`.
-    set iss(assign) {None}
+    edit_or_add_issue $test iss show $issue_id
 }
 
 #############################################################################
