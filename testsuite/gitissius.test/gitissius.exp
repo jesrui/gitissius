@@ -44,6 +44,49 @@ proc edit_or_add_issue { test myiss myshow issue_id } {
     return {}
 }
 
+# Expect block for the `git issius show` command.
+# myshow is a reference to the values expected to be output by the command.
+# If all is true, it expects the output of `git issius show --all`.
+# If successful, it calls pass, otherwise it calls fail.
+proc show_issue {test myshow issue_id all} {
+    upvar $myshow show
+    global C
+
+    set issue_template "^${C}Id$C:$C $C$issue_id$C\r
+${C}Title$C:$C $C$show(title)$C\r
+${C}Type$C:$C $C[string totitle $show(type)]$C\r
+${C}Severity$C:$C $C[string totitle $show(severity)]$C\r
+${C}Reported From$C:$C ${C}$show(author)$C\r
+${C}Assigned To$C:$C ${C}$show(assign)$C\r
+${C}Created On$C:$C ${C}.*$C\r
+${C}Updated On$C:$C ${C}.*$C\r
+${C}Status$C:$C $C[string totitle $show(status)]$C\r
+${C}Description$C:$C\r
+  $C$show(desc1)$C\r
+  $C$show(desc2)$C\r
+"
+
+    if {$all} {
+        set issue_template [string cat $issue_template \
+"${C}-----$C\r
+${C}Reported From$C:$C ${C}$show(author)$C\r
+${C}Created On$C:$C ${C}.*$C\r
+${C}Description$C:$C\r
+  $C$show(comment1)$C\r
+  $C$show(comment2)$C\r
+${C}-----$C\r
+"]
+    }
+
+    expect {
+        -re "$issue_template" {pass $test}
+
+        timeout     { fail "$test: timeout" }
+        eof         { fail "$test: EOF" }
+        default     { fail $test }
+    }
+}
+
 ##############################################################################
 
 # Just to warm up and load python and all needed libraries
@@ -56,6 +99,11 @@ expect {
     eof         { fail "$test: EOF" }
     default     { fail $test }
 }
+
+# Now that python is loaded we can reduce the timeout.
+set timeout 3
+
+##############################################################################
 
 # The iss array contains the issue values entered on `git issius add`
 # or `edit`.
@@ -71,18 +119,13 @@ set iss(desc2)      {this is the second line of the issue description}
 
 # The show array contains the issue values shown on the `git issius add`
 # or `edit` prompts and `show` and `list` commands.
-# (The values will be transformed as needed, e.g. capitalized)
+# The values will be transformed as needed, e.g. capitalized.
 set show(title)      {None}
 set show(severity)   {low}
 set show(type)       {bug}
 set show(author)     {Micky Mouse <micky.mouse@example.com>}
 set show(assign)     {None}
 set show(status)     {new}
-
-# Now that python is loaded we can reduce the timeout.
-set timeout 3
-
-##############################################################################
 
 set test "add issue"
 spawn $PYTHON $GI add
@@ -99,28 +142,8 @@ set test "show issue"
 if {![info exists issue_id]} {
     unresolved $test
 } else {
-    set issue_template "^${C}Id$C:$C $C$issue_id$C\r
-${C}Title$C:$C $C$show(title)$C\r
-${C}Type$C:$C $C[string totitle $show(type)]$C\r
-${C}Severity$C:$C $C[string totitle $show(severity)]$C\r
-${C}Reported From$C:$C ${C}$show(author)$C\r
-${C}Assigned To$C:$C ${C}$show(assign)$C\r
-${C}Created On$C:$C ${C}.*$C\r
-${C}Updated On$C:$C ${C}.*$C\r
-${C}Status$C:$C $C[string totitle $show(status)]$C\r
-${C}Description$C:$C\r
-  $C$show(desc1)$C\r
-  $C$show(desc2)$C\r
-"
-
     spawn $PYTHON $GI show $issue_id
-    expect {
-        -re "$issue_template" {pass $test}
-
-        timeout { fail "$test: timeout" }
-        eof { fail "$test: EOF" }
-        default { fail $test }
-    }
+    show_issue $test show $issue_id false
 }
 
 ##############################################################################
@@ -162,25 +185,8 @@ set test "show issue with comments"
 if {![info exists issue_id]} {
     unresolved $test
 } else {
-    set issue_template [string cat $issue_template \
-"${C}-----$C\r
-${C}Reported From$C:$C ${C}$show(author)$C\r
-${C}Created On$C:$C ${C}.*$C\r
-${C}Description$C:$C\r
-  $C$show(comment1)$C\r
-  $C$show(comment2)$C\r
-${C}-----$C\r
-"]
-
     spawn $PYTHON $GI show --all $issue_id
-
-    expect {
-        -re "$issue_template" {pass $test}
-
-        timeout { fail "$test: timeout" }
-        eof { fail "$test: EOF" }
-        default { fail $test }
-    }
+    show_issue $test show $issue_id true
 }
 
 ##############################################################################
@@ -220,12 +226,30 @@ $SEP${C}[string totitle $show(status)]$C
 
 ##############################################################################
 
+set iss(severity)   {high}
+set iss(assign)     {Donald Duck <donald@example.com}
+set iss(status)     {assigned}
+
 set test "edit issue"
 if {![info exists issue_id]} {
     unresolved $test
 } else {
     spawn $PYTHON $GI edit $issue_id
     edit_or_add_issue $test iss show $issue_id
+}
+
+##############################################################################
+
+set show(severity)   $iss(severity)
+set show(assign)     $iss(assign)
+set show(status)     $iss(status)
+
+set test "show edited issue (with comments)"
+if {![info exists issue_id]} {
+    unresolved $test
+} else {
+    spawn $PYTHON $GI show --all $issue_id
+    show_issue $test show $issue_id true
 }
 
 #############################################################################
