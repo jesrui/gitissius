@@ -87,6 +87,78 @@ ${C}-----$C\r
     }
 }
 
+# Expect block for the `git issius list` command.
+# myshow is a reference to the values expected to be output by the command.
+# If successful, it calls pass, otherwise it calls fail.
+proc list_issues {test show_dict {total {}}} {
+    global C
+
+    set SEP {\W+\|\W+} ;# field sepatator: " | "
+
+    set listing_header "${C}ID${C}${SEP}${C}Title${C}${SEP}${C}Assigned To${C}${SEP}${C}Type${C}${SEP}${C}Status${C}"
+
+    if {$total eq {}} {
+        set total ".*"
+    }
+
+    set listing_footer "${C}Total Issues: $total$C\r"
+
+# TODO match assigned partially if $COLUMNS=82, change $show(assign) in test edit
+
+    set issue_template [string map {"\n" ""} "
+${C}(\[0-9a-f\]{5})$C
+$SEP${C}(.*?)$C
+$SEP${C}(.*?)$C
+$SEP${C}(.*?)$C
+$SEP${C}(\[^\r\]*?)($C|\\W)*\r
+"]
+
+    expect_after {
+        timeout         { fail "$test: timeout" }
+        eof             { fail "$test: EOF" }
+        default         { fail $test }
+    }
+
+    expect -re "$listing_header" {
+        if {[dict size $show_dict] == 0} {
+            expect -re "$listing_footer" { pass $test }
+        } else {
+            dict for {issue_id show} $show_dict {
+                expect {
+                    -re "$issue_template" {
+                        set got_id $expect_out(1,string)
+                        if {$got_id eq [string range $issue_id 0 4]} {
+                            dict with show {
+                                set got_title   $expect_out(2,string)
+                                set got_assign  $expect_out(3,string)
+                                set got_type    $expect_out(4,string)
+                                set got_status  $expect_out(5,string)
+                                if {[string first $got_title $title] != 0} {
+                                    fail "$test: title mismatch"
+                                } elseif {$got_assign ne $assign} {
+                                    fail "$test: assigned mismatch, got $got_assign, expected $assign"
+                                } elseif {$got_type ne [string totitle $type]} {
+                                    fail "$test: type mismatch, got $got_type, expected $type"
+                                } elseif {$got_status ne [string totitle $status]} {
+                                    fail "$test: status mismatch, got $got_status, expected $status"
+                                } else {
+                                    exp_continue
+                                }
+                            }
+                        }
+                    }
+                    -re "$listing_footer" {
+                        pass $test
+                        break
+                    }
+                }
+            }
+        }
+    }
+
+    expect_after ;# clean up
+}
+
 ##############################################################################
 
 # Just to warm up and load python and all needed libraries
@@ -191,37 +263,14 @@ if {![info exists issue_id]} {
 
 ##############################################################################
 
-set SEP {\W+\|\W+} ;# field sepatator: " | "
-set listing_header "${C}ID${C}${SEP}${C}Title${C}${SEP}${C}Assigned To${C}${SEP}${C}Type${C}${SEP}${C}Status${C}"
-
 set test "list issues"
 if {![info exists issue_id]} {
     unresolved $test
 } else {
-    set issue_template [string map {"\n" ""} "
-$C[string range $issue_id 0 4]$C
-$SEP${C}(.*?)$C
-$SEP${C}$show(assign)$C
-$SEP${C}[string totitle $show(type)]$C
-$SEP${C}[string totitle $show(status)]$C
-"]
-
+    set show_dict [dict create]
+    dict append show_dict $issue_id [dict create {*}[array get show]]]
     spawn $PYTHON $GI list
-    expect {
-        -re "$listing_header.*$issue_template" {
-            set got_title $expect_out(1,string)
-            if {[string equal -length [string length $got_title] \
-                    $got_title $show(title)]} {
-                pass $test
-            } else {
-                fail "$test: title mismatch"
-            }
-        }
-
-        timeout { fail "$test: timeout" }
-        eof { fail "$test: EOF" }
-        default { fail $test }
-    }
+    list_issues $test $show_dict
 }
 
 ##############################################################################
@@ -284,13 +333,7 @@ if {[info exists issue_id]} {
     unresolved $test
 } else {
     spawn $PYTHON $GI list
-    expect {
-        -re "$listing_header.*${C}Total Issues: 0$C\r" { pass $test }
-
-        timeout     { fail "$test: timeout" }
-        eof         { fail "$test: EOF" }
-        default     { fail $test }
-    }
+    list_issues $test [dict create] 0
 }
 
 ##############################################################################
