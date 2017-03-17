@@ -180,7 +180,7 @@ set timeout 3
 # The iss array contains the issue values entered on `git issius add`
 # or `edit`.
 # Empty strings are used to accept default values.
-set iss(title)      {this is the issue title. It is so long that it will be trimmed by `git issuis list`}
+set iss(title)      {this is the issue title. It is so long that it will be trimmed by `git issius list`}
 set iss(severity)   {}
 set iss(type)       {}
 set iss(author)     {}
