@@ -93,7 +93,7 @@ ${C}-----$C\r
 proc list_issues {test show_dict {total {}}} {
     global C
 
-    set SEP {\W+\|\W+} ;# field sepatator: " | "
+    set SEP {\s+\|\s+} ;# field sepatator: " | "
 
     set listing_header "${C}ID${C}${SEP}${C}Title${C}${SEP}${C}Assigned To${C}${SEP}${C}Type${C}${SEP}${C}Status${C}"
 
@@ -110,7 +110,7 @@ ${C}(\[0-9a-f\]{5})$C
 $SEP${C}(.*?)$C
 $SEP${C}(.*?)$C
 $SEP${C}(.*?)$C
-$SEP${C}(\[^\r\]*?)($C|\\W)*\r
+$SEP${C}(\[^\r\]*?)($C|\\s)*\r
 "]
 
     expect_after {
