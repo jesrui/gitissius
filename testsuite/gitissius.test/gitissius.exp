@@ -338,6 +338,70 @@ if {![info exists issue_id]} {
 
 ##############################################################################
 
+set test "my issues"
+if {![info exists issue_id]} {
+    unresolved $test
+} else {
+    set show_dict [dict create]
+    dict append show_dict $issue_id [dict create {*}[array get show]]]
+    spawn $PYTHON $GI my
+    list_issues $test $show_dict 1
+}
+
+##############################################################################
+
+set iss2(title)     {this is the second issue}
+set iss2(severity)  {high}
+set iss2(type)      {feature}
+set iss2(author)    {Donald Duck <donald@example.com}
+set iss2(assign)    {}
+set iss2(status)    {}
+set iss2(desc1)     {this is the first line of the issue description}
+set iss2(desc2)     {this is the second line of the issue description}
+
+set show2(title)    {None}
+set show2(severity) {low}
+set show2(type)     {bug}
+set show2(author)   {Micky Mouse <micky.mouse@example.com>}
+set show2(assign)   {None}
+set show2(status)   {new}
+
+set test "add second issue"
+spawn $PYTHON $GI add
+set result [edit_or_add_issue $test iss2 show2 ""]
+if {$result ne ""} {set issue_id2 $result}
+
+##############################################################################
+
+set show2(title)    $iss2(title)
+set show2(severity) $iss2(severity)
+set show2(type)     $iss2(type)
+set show2(author)   $iss2(author)
+set show2(desc1)    $iss2(desc1)
+set show2(desc2)    $iss2(desc2)
+
+set test "show second issue"
+if {![info exists issue_id2]} {
+    unresolved $test
+} else {
+    spawn $PYTHON $GI show $issue_id2
+    show_issue $test show2 $issue_id2 false
+}
+
+##############################################################################
+
+set test "my issues (only one of the two issues of the database)"
+if {![info exists issue_id]} {
+    unresolved $test
+} else {
+    set show_dict [dict create]
+    dict append show_dict $issue_id [dict create {*}[array get show]]]
+    spawn $PYTHON $GI my
+    list_issues $test $show_dict 1
+}
+
+##############################################################################
+
 set test "delete issue"
 if {![info exists issue_id]} {
     unresolved $test
@@ -348,9 +412,20 @@ if {![info exists issue_id]} {
 }
 
 ##############################################################################
+
+set test "delete second issue"
+if {![info exists issue_id2]} {
+    unresolved $test
+} else {
+    spawn $PYTHON $GI delete $issue_id2
+    set result [delete_issue $test show2 $issue_id2]
+    if {$result ne ""} { unset issue_id2 }
+}
+
+##############################################################################
 set test "list issues (empty list)"
 
-if {[info exists issue_id]} {
+if {[info exists issue_id] || [info exists issue_id2]} {
     unresolved $test
 } else {
     spawn $PYTHON $GI list
