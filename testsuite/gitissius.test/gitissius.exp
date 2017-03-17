@@ -301,7 +301,7 @@ if {![info exists issue_id]} {
 
 ##############################################################################
 
-set test "list issues"
+set test "list issues (only one issue)"
 if {![info exists issue_id]} {
     unresolved $test
 } else {
@@ -389,6 +389,19 @@ if {![info exists issue_id2]} {
 } else {
     spawn $PYTHON $GI show $issue_id2
     show_issue $test show2 $issue_id2 false
+}
+
+##############################################################################
+
+set test "list issues (two issues in the database)"
+if {![info exists issue_id]} {
+    unresolved $test
+} else {
+    set show_dict [dict create]
+    dict append show_dict $issue_id [dict create {*}[array get show]]]
+    dict append show_dict $issue_id2 [dict create {*}[array get show2]]]
+    spawn $PYTHON $GI list
+    list_issues $test $show_dict 2
 }
 
 ##############################################################################
