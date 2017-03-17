@@ -161,6 +161,35 @@ $SEP${C}(\[^\r\]*?)($C|\\s)*\r
     catch expect_after
 }
 
+# Expect block for `git issius delete`.
+# myshow is a reference to the values expected to be prompted by the command.
+# If successful, it calls pass, otherwise it calls fail.
+# Return the issue_id just deleted if successful, otherwise an empty string.
+proc delete_issue {test myshow issue_id} {
+    upvar $myshow show
+    global C
+
+    set result {}
+
+    expect_after {
+        timeout         { fail "$test: timeout" }
+        eof             { fail "$test: EOF" }
+        default         { fail $test }
+    }
+
+    expect -re "Delete issue '$show(title)' \\(y\\)\\? " {
+        send "y\n"
+        expect -re "${C}Deleted issue$C: $issue_id" {
+            pass $test
+            set result $issue_id
+        }
+    }
+
+    catch expect_after ;# clean up
+
+    return $result
+}
+
 ##############################################################################
 
 # Just to warm up and load python and all needed libraries
@@ -307,32 +336,18 @@ if {![info exists issue_id]} {
     show_issue $test show $issue_id true
 }
 
-#############################################################################
+##############################################################################
 
 set test "delete issue"
 if {![info exists issue_id]} {
     unresolved $test
 } else {
     spawn $PYTHON $GI delete $issue_id
-
-    expect_after {
-        timeout         { fail "$test: timeout" }
-        eof             { fail "$test: EOF" }
-        default         { fail $test }
-    }
-
-    expect -re "Delete issue '$iss(title)' \\(y\\)\\? " {
-        send "y\n"
-        expect -re "${C}Deleted issue$C: $issue_id" { pass $test }
-    }
-
-    catch expect_after ;# clean up
-
-    unset issue_id
+    set result [delete_issue $test show $issue_id]
+    if {$result ne ""} { unset issue_id }
 }
 
 ##############################################################################
-
 set test "list issues (empty list)"
 
 if {[info exists issue_id]} {
