@@ -156,7 +156,9 @@ $SEP${C}(\[^\r\]*?)($C|\\s)*\r
         }
     }
 
-    expect_after ;# clean up
+    # clean up, ignore errors if the spawned id is already closed (because of
+    # nested expect commands)
+    catch expect_after
 }
 
 ##############################################################################
@@ -249,7 +251,7 @@ if {![info exists issue_id]} {
         }
     }
 
-    expect_after ;# clean up
+    catch expect_after ;# clean up
 }
 
 ##############################################################################
@@ -324,7 +326,7 @@ if {![info exists issue_id]} {
         expect -re "${C}Deleted issue$C: $issue_id" { pass $test }
     }
 
-    expect_after ;# clean up
+    catch expect_after ;# clean up
 
     unset issue_id
 }
