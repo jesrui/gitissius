@@ -88,7 +88,10 @@ ${C}-----$C\r
 }
 
 # Expect block for the `git issius list` command.
-# myshow is a reference to the values expected to be output by the command.
+# show_dict is a dictionary where the keys are the issues ids to be listed and
+# each value is a dictionary with the corresponding issue values
+# (with the same structure as the show array).
+# total is the expected total number of issues listed.
 # If successful, it calls pass, otherwise it calls fail.
 proc list_issues {test show_dict {total {}}} {
     global C
