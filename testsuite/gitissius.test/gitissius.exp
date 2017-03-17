@@ -69,7 +69,7 @@ ${C}Description$C:$C\r
     if {$all} {
         set issue_template [string cat $issue_template \
 "${C}-----$C\r
-${C}Reported From$C:$C ${C}$show(author)$C\r
+${C}Reported From$C:$C ${C}$show(comment_author)$C\r
 ${C}Created On$C:$C ${C}.*$C\r
 ${C}Description$C:$C\r
   $C$show(comment1)$C\r
@@ -183,7 +183,7 @@ set timeout 3
 set iss(title)      {this is the issue title. It is so long that it will be trimmed by `git issius list`}
 set iss(severity)   {}
 set iss(type)       {}
-set iss(author)     {}
+set iss(author)     {Donald Duck <donald@example.com}
 set iss(assign)     {}
 set iss(status)     {}
 set iss(desc1)      {this is the first line of the issue description}
@@ -207,6 +207,7 @@ if {$result ne ""} {set issue_id $result}
 ##############################################################################
 
 set show(title)      $iss(title)
+set show(author)     $iss(author)
 set show(desc1)      $iss(desc1)
 set show(desc2)      $iss(desc2)
 
@@ -220,8 +221,11 @@ if {![info exists issue_id]} {
 
 ##############################################################################
 
+set iss(comment_author) {}
 set iss(comment1)      {this is the first line of the issue comment}
 set iss(comment2)      {this is the second line of the issue comment}
+
+set show(comment_author) {Micky Mouse <micky.mouse@example.com>}
 
 set test "add issue comment"
 if {![info exists issue_id]} {
@@ -236,8 +240,8 @@ if {![info exists issue_id]} {
     }
 
     expect -re "${C}Commenting on:$C ${C}$show(title)$C" {
-        expect -ex "Reported From \($show(author)\): " {
-            send "\n"
+        expect -ex "Reported From \($show(comment_author)\): " {
+            send "$iss(comment_author)\n"
             expect -ex {Description (End with a line containing only '.'): } {
                 send "$iss(comment1)\n$iss(comment2)\n.\n"
                 expect -ex "Comment issue: $issue_id" { pass $test }
@@ -276,7 +280,7 @@ if {![info exists issue_id]} {
 ##############################################################################
 
 set iss(severity)   {high}
-set iss(assign)     {Donald Duck <donald@example.com}
+set iss(assign)     {Micky Mouse <micky.mouse@example.com>}
 set iss(status)     {assigned}
 
 set test "edit issue"
