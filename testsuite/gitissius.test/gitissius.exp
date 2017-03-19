@@ -6,15 +6,17 @@ set Id {[0-9a-f]{64}}
 set C {(?:\e\[[0-9;]*m)*}
 
 # Expect block for `git issius add` and `git issius edit`.
-# Execute an `add` command if issue_id is empty, `edit` if it is not empty.
+# Execute an `add` command if $iss(id) is empty, `edit` if it is not empty.
 # myiss is a reference to the values to be entered for the issue.
 # myshow is a reference to the values expected to be prompted by the command.
 # If successful, it calls pass, otherwise it calls fail.
-# Return the issue_id just created or edited if successful, otherwise an empty string.
-proc edit_or_add_issue { test myiss myshow issue_id } {
+# Return the issue id just created or edited if successful, otherwise an empty string.
+proc edit_or_add_issue { test myiss myshow } {
     upvar $myiss iss
     upvar $myshow show
     global Id
+
+    set is_add [expr {[array get iss id] == {}}]
 
     expect {
         -ex "Title ($show(title)): " { send "$iss(title)\n"; exp_continue }
@@ -28,9 +30,9 @@ proc edit_or_add_issue { test myiss myshow issue_id } {
             { send "[string index $iss(status) 0]\n"; exp_continue }
         -ex {Description (End with a line containing only '.'):}
             { send "$iss(desc1)\n$iss(desc2)\n.\n"; exp_continue }
-        -ex [expr {$issue_id eq {} ? {Create issue (y)? } : {Save changes (y)? }}]
+        -ex [expr {$is_add ? {Create issue (y)? } : {Save changes (y)? }}]
             { send "\n"; exp_continue }
-        -re [expr {$issue_id eq {} ? "Created issue: ($Id)" : "Edited issue: ($Id)"}] {
+        -re [expr {$is_add ? "Created issue: ($Id)" : "Edited issue: ($Id)"}] {
             set issue_id $expect_out(1,string)
             pass $test
             return $issue_id
@@ -41,6 +43,9 @@ proc edit_or_add_issue { test myiss myshow issue_id } {
         default     { fail $test }
     }
 
+    # TODO check that all issue fields in show
+    # were seen correctly
+
     return {}
 }
 
@@ -48,11 +53,11 @@ proc edit_or_add_issue { test myiss myshow issue_id } {
 # myshow is a reference to the values expected to be output by the command.
 # If all is true, it expects the output of `git issius show --all`.
 # If successful, it calls pass, otherwise it calls fail.
-proc show_issue {test myshow issue_id all} {
+proc show_issue {test myshow all} {
     upvar $myshow show
     global C
 
-    set issue_template "^${C}Id$C:$C $C$issue_id$C\r
+    set issue_template "^${C}Id$C:$C $C$show(id)$C\r
 ${C}Title$C:$C $C$show(title)$C\r
 ${C}Type$C:$C $C[string totitle $show(type)]$C\r
 ${C}Severity$C:$C $C[string totitle $show(severity)]$C\r
@@ -156,7 +161,7 @@ proc list_issues {test show_dict {total {}}} {
                     }
                 }
                 -re "$listing_footer" {
-                    # TODO check that all issue_id's in show_dict
+                    # TODO check that all issue ids in show_dict
                     # were seen correctly
                     pass $test
                 }
@@ -172,12 +177,12 @@ proc list_issues {test show_dict {total {}}} {
 # Expect block for `git issius delete`.
 # myshow is a reference to the values expected to be prompted by the command.
 # If successful, it calls pass, otherwise it calls fail.
-# Return the issue_id just deleted if successful, otherwise an empty string.
-proc delete_issue {test myshow issue_id} {
+# Return an empty string if successful, otherwise $show(id)
+proc delete_issue {test myshow} {
     upvar $myshow show
     global C
 
-    set result {}
+    set result $show(id)
 
     expect_after {
         timeout         { fail "$test: timeout" }
@@ -187,9 +192,9 @@ proc delete_issue {test myshow issue_id} {
 
     expect -re "Delete issue '$show(title)' \\(y\\)\\? " {
         send "y\n"
-        expect -re "${C}Deleted issue$C: $issue_id" {
+        expect -re "${C}Deleted issue$C: $show(id)" {
             pass $test
-            set result $issue_id
+            set result {}
         }
     }
 
@@ -240,22 +245,22 @@ set show(status)     {new}
 
 set test "add issue"
 spawn $PYTHON $GI add
-set result [edit_or_add_issue $test iss show ""]
-if {$result ne ""} {set issue_id $result}
+set iss(id) [edit_or_add_issue $test iss show]
 
 ##############################################################################
 
+set show(id)         $iss(id)
 set show(title)      $iss(title)
 set show(author)     $iss(author)
 set show(desc1)      $iss(desc1)
 set show(desc2)      $iss(desc2)
 
 set test "show issue"
-if {![info exists issue_id]} {
+if {$show(id) eq {}} {
     unresolved $test
 } else {
-    spawn $PYTHON $GI show $issue_id
-    show_issue $test show $issue_id false
+    spawn $PYTHON $GI show $show(id)
+    show_issue $test show false
 }
 
 ##############################################################################
@@ -267,10 +272,10 @@ set iss(comment2)      {this is the second line of the issue comment}
 set show(comment_author) {Micky Mouse <micky.mouse@example.com>}
 
 set test "add issue comment"
-if {![info exists issue_id]} {
+if {$show(id) eq {}} {
     unresolved $test
 } else {
-    spawn $PYTHON $GI comment $issue_id
+    spawn $PYTHON $GI comment $show(id)
 
     expect_after {
         timeout         { fail "$test: timeout" }
@@ -283,7 +288,7 @@ if {![info exists issue_id]} {
             send "$iss(comment_author)\n"
             expect -ex {Description (End with a line containing only '.'): } {
                 send "$iss(comment1)\n$iss(comment2)\n.\n"
-                expect -ex "Comment issue: $issue_id" { pass $test }
+                expect -ex "Comment issue: $show(id)" { pass $test }
             }
         }
     }
@@ -297,21 +302,21 @@ set show(comment1) $iss(comment1)
 set show(comment2) $iss(comment2)
 
 set test "show issue with comments"
-if {![info exists issue_id]} {
+if {$show(id) eq {}} {
     unresolved $test
 } else {
-    spawn $PYTHON $GI show --all $issue_id
-    show_issue $test show $issue_id true
+    spawn $PYTHON $GI show --all $show(id)
+    show_issue $test show true
 }
 
 ##############################################################################
 
 set test "list issues (only one issue)"
-if {![info exists issue_id]} {
+if {$show(id) eq {}} {
     unresolved $test
 } else {
     set show_dict [dict create]
-    dict append show_dict $issue_id [dict create {*}[array get show]]]
+    dict append show_dict $show(id) [dict create {*}[array get show]]
     spawn $PYTHON $GI list
     list_issues $test $show_dict
 }
@@ -323,11 +328,11 @@ set iss(assign)     {Micky Mouse <micky.mouse@example.com>}
 set iss(status)     {assigned}
 
 set test "edit issue"
-if {![info exists issue_id]} {
+if {$show(id) eq {}} {
     unresolved $test
 } else {
-    spawn $PYTHON $GI edit $issue_id
-    edit_or_add_issue $test iss show $issue_id
+    spawn $PYTHON $GI edit $show(id)
+    edit_or_add_issue $test iss show
 }
 
 ##############################################################################
@@ -337,21 +342,21 @@ set show(assign)     $iss(assign)
 set show(status)     $iss(status)
 
 set test "show edited issue (with comments)"
-if {![info exists issue_id]} {
+if {$show(id) eq {}} {
     unresolved $test
 } else {
-    spawn $PYTHON $GI show --all $issue_id
-    show_issue $test show $issue_id true
+    spawn $PYTHON $GI show --all $show(id)
+    show_issue $test show true
 }
 
 ##############################################################################
 
 set test "my issues"
-if {![info exists issue_id]} {
+if {$show(id) eq {}} {
     unresolved $test
 } else {
     set show_dict [dict create]
-    dict append show_dict $issue_id [dict create {*}[array get show]]
+    dict append show_dict $show(id) [dict create {*}[array get show]]
     spawn $PYTHON $GI my
     list_issues $test $show_dict 1
 }
@@ -376,11 +381,11 @@ set show2(status)   {new}
 
 set test "add second issue"
 spawn $PYTHON $GI add
-set result [edit_or_add_issue $test iss2 show2 ""]
-if {$result ne ""} {set issue_id2 $result}
+set iss2(id) [edit_or_add_issue $test iss2 show2]
 
 ##############################################################################
 
+set show2(id)       $iss2(id)
 set show2(title)    $iss2(title)
 set show2(severity) $iss2(severity)
 set show2(type)     $iss2(type)
@@ -389,22 +394,22 @@ set show2(desc1)    $iss2(desc1)
 set show2(desc2)    $iss2(desc2)
 
 set test "show second issue"
-if {![info exists issue_id2]} {
+if {$show2(id) eq {}} {
     unresolved $test
 } else {
-    spawn $PYTHON $GI show $issue_id2
-    show_issue $test show2 $issue_id2 false
+    spawn $PYTHON $GI show $show2(id)
+    show_issue $test show2 false
 }
 
 ##############################################################################
 
 set test "list issues (two issues in the database)"
-if {![info exists issue_id]} {
+if {$show(id) eq {} || $show2(id) eq {}} {
     unresolved $test
 } else {
     set show_dict [dict create]
-    dict append show_dict $issue_id [dict create {*}[array get show]]
-    dict append show_dict $issue_id2 [dict create {*}[array get show2]]
+    dict append show_dict $show(id) [dict create {*}[array get show]]
+    dict append show_dict $show2(id) [dict create {*}[array get show2]]
     spawn $PYTHON $GI list
     list_issues $test $show_dict 2
 }
@@ -412,11 +417,11 @@ if {![info exists issue_id]} {
 ##############################################################################
 
 set test "my issues (only one of the two issues of the database)"
-if {![info exists issue_id]} {
+if {$show(id) eq {}} {
     unresolved $test
 } else {
     set show_dict [dict create]
-    dict append show_dict $issue_id [dict create {*}[array get show]]
+    dict append show_dict $show(id) [dict create {*}[array get show]]
     spawn $PYTHON $GI my
     list_issues $test $show_dict 1
 }
@@ -424,29 +429,29 @@ if {![info exists issue_id]} {
 ##############################################################################
 
 set test "delete issue"
-if {![info exists issue_id]} {
+if {$show(id) eq {}} {
     unresolved $test
 } else {
-    spawn $PYTHON $GI delete $issue_id
-    set result [delete_issue $test show $issue_id]
-    if {$result ne ""} { unset issue_id }
+    spawn $PYTHON $GI delete $show(id)
+    set iss(id) [delete_issue $test show]
+    set show(id) $iss(id)
 }
 
 ##############################################################################
 
 set test "delete second issue"
-if {![info exists issue_id2]} {
+if {$show2(id) eq {}} {
     unresolved $test
 } else {
-    spawn $PYTHON $GI delete $issue_id2
-    set result [delete_issue $test show2 $issue_id2]
-    if {$result ne ""} { unset issue_id2 }
+    spawn $PYTHON $GI delete $show2(id)
+    set iss2(id) [delete_issue $test show2]
+    set show2(id) $iss2(id)
 }
 
 ##############################################################################
 set test "list issues (empty list)"
 
-if {[info exists issue_id] || [info exists issue_id2]} {
+if {$show(id) ne {} || $show2(id) ne {}} {
     unresolved $test
 } else {
     spawn $PYTHON $GI list
