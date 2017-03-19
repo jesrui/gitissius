@@ -96,9 +96,9 @@ ${C}-----$C\r
 proc list_issues {test show_dict {total {}}} {
     global C
 
-    set SEP {\s+\|\s+} ;# field sepatator: " | "
+    set S {\s+\|\s+} ;# field sepatator: " | "
 
-    set listing_header "${C}ID${C}${SEP}${C}Title${C}${SEP}${C}Assigned To${C}${SEP}${C}Type${C}${SEP}${C}Status${C}"
+    set listing_header "${C}ID${C}${S}${C}Title${C}${S}${C}Assigned To${C}${S}${C}Type${C}${S}${C}Status${C}"
 
     if {$total eq {}} {
         set total ".*"
@@ -108,13 +108,17 @@ proc list_issues {test show_dict {total {}}} {
 
 # TODO match assigned partially if $COLUMNS=82, change $show(assign) in test edit
 
-    set issue_template [string map {"\n" ""} "
-${C}(\[0-9a-f\]{5})$C
-$SEP${C}(.*?)$C
-$SEP${C}(.*?)$C
-$SEP${C}(.*?)$C
-$SEP${C}(\[^\r\]*?)($C|\\s)*\r
-"]
+    set F {([^\r]+?)} ;# A field value in a row of the listing
+    set Fc "${S}${C}${F}${C}" ;# A complete field cell, including separator and value
+    set issue_template "${C}(\[0-9a-f\]{5})${C}${Fc}${Fc}${Fc}${Fc}(?:(${C}|\\s))*\r"
+
+    # the same as show_id but using short issue ids
+    set sid_dict [dict create]
+    dict for {issue_id show} $show_dict {
+        dict append sid_dict [string range $issue_id 0 4] $show
+    }
+
+#    puts "$test sid_dict $sid_dict"
 
     expect_after {
         timeout         { fail "$test: timeout" }
@@ -126,34 +130,35 @@ $SEP${C}(\[^\r\]*?)($C|\\s)*\r
         if {[dict size $show_dict] == 0} {
             expect -re "$listing_footer" { pass $test }
         } else {
-            dict for {issue_id show} $show_dict {
-                expect {
-                    -re "$issue_template" {
-                        set got_id $expect_out(1,string)
-                        if {$got_id eq [string range $issue_id 0 4]} {
-                            dict with show {
-                                set got_title   $expect_out(2,string)
-                                set got_assign  $expect_out(3,string)
-                                set got_type    $expect_out(4,string)
-                                set got_status  $expect_out(5,string)
-                                if {[string first $got_title $title] != 0} {
-                                    fail "$test: title mismatch"
-                                } elseif {$got_assign ne $assign} {
-                                    fail "$test: assigned mismatch, got $got_assign, expected $assign"
-                                } elseif {$got_type ne [string totitle $type]} {
-                                    fail "$test: type mismatch, got $got_type, expected $type"
-                                } elseif {$got_status ne [string totitle $status]} {
-                                    fail "$test: status mismatch, got $got_status, expected $status"
-                                } else {
-                                    exp_continue
-                                }
+            expect {
+                -re "$issue_template" {
+                    set got_id $expect_out(1,string)
+                    if {[dict exists $sid_dict $got_id]} {
+                        dict with sid_dict $got_id {
+                            set got_title   $expect_out(2,string)
+                            set got_assign  $expect_out(3,string)
+                            set got_type    $expect_out(4,string)
+                            set got_status  $expect_out(5,string)
+                            if {[string first $got_title $title] != 0} {
+                                fail "$test: title mismatch"
+                            } elseif {$got_assign ne $assign} {
+                                fail "$test: assigned mismatch, got $got_assign, expected $assign"
+                            } elseif {$got_type ne [string totitle $type]} {
+                                fail "$test: type mismatch, got $got_type, expected $type"
+                            } elseif {$got_status ne [string totitle $status]} {
+                                fail "$test: status mismatch, got $got_status, expected $status"
+                            } else {
+                                exp_continue
                             }
                         }
+                    } else {
+                        fail "$test unexpected issue id $got_id found in the list"
                     }
-                    -re "$listing_footer" {
-                        pass $test
-                        break
-                    }
+                }
+                -re "$listing_footer" {
+                    # TODO check that all issue_id's in show_dict
+                    # were seen correctly
+                    pass $test
                 }
             }
         }
@@ -346,7 +351,7 @@ if {![info exists issue_id]} {
     unresolved $test
 } else {
     set show_dict [dict create]
-    dict append show_dict $issue_id [dict create {*}[array get show]]]
+    dict append show_dict $issue_id [dict create {*}[array get show]]
     spawn $PYTHON $GI my
     list_issues $test $show_dict 1
 }
@@ -398,8 +403,8 @@ if {![info exists issue_id]} {
     unresolved $test
 } else {
     set show_dict [dict create]
-    dict append show_dict $issue_id [dict create {*}[array get show]]]
-    dict append show_dict $issue_id2 [dict create {*}[array get show2]]]
+    dict append show_dict $issue_id [dict create {*}[array get show]]
+    dict append show_dict $issue_id2 [dict create {*}[array get show2]]
     spawn $PYTHON $GI list
     list_issues $test $show_dict 2
 }
@@ -411,7 +416,7 @@ if {![info exists issue_id]} {
     unresolved $test
 } else {
     set show_dict [dict create]
-    dict append show_dict $issue_id [dict create {*}[array get show]]]
+    dict append show_dict $issue_id [dict create {*}[array get show]]
     spawn $PYTHON $GI my
     list_issues $test $show_dict 1
 }
