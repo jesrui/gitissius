@@ -1,3 +1,8 @@
+# regexp for the issue id
+set Id {[0-9a-f]{64}}
+# regexp that match any number of consecutive ANSI color escape sequences from colorama
+set C {(?:\e\[[0-9;]*m)*}
+
 proc ${tool}_init {args} {
     puts tool_init
 
@@ -33,3 +38,206 @@ proc assert_cmd_run {cmd cmdargs} {
     return $exec_output
 }
 
+# Expect block for `git issius add` and `git issius edit`.
+# Execute an `add` command if $iss(id) is empty, `edit` if it is not empty.
+# myiss is a reference to the values to be entered for the issue.
+# myshow is a reference to the values expected to be prompted by the command.
+# If successful, it calls pass, otherwise it calls fail.
+# Return the issue id just created or edited if successful, otherwise an empty string.
+proc edit_or_add_issue { test myiss myshow } {
+    upvar $myiss iss
+    upvar $myshow show
+    global Id
+
+    set is_add [expr {[array get iss id] == {}}]
+
+    expect {
+        -ex "Title ($show(title)): " { send "$iss(title)\n"; exp_continue }
+        -ex "Type ($show(type)) \[b/f\]: "
+            { send "[string index $iss(type) 0]\n"; exp_continue }
+        -ex "Severity ($show(severity)) \[h/m/l\]: "
+            { send "[string index $iss(severity) 0]\n"; exp_continue }
+        -ex "Reported From ($show(reported_from)): "	{ send "$iss(reported_from)\n"; exp_continue }
+        -ex "Assigned To ($show(assigned_to)): "	{ send "$iss(assigned_to)\n"; exp_continue }
+        -re "Status \\($show(status)\\) \\\[.*\\\]: "
+            { send "[string index $iss(status) 0]\n"; exp_continue }
+        -ex {Description (End with a line containing only '.'):}
+            { send "$iss(desc1)\n$iss(desc2)\n.\n"; exp_continue }
+        -ex [expr {$is_add ? {Create issue (y)? } : {Save changes (y)? }}]
+            { send "\n"; exp_continue }
+        -re [expr {$is_add ? "Created issue: ($Id)" : "Edited issue: ($Id)"}] {
+            set issue_id $expect_out(1,string)
+            pass $test
+            return $issue_id
+        }
+
+        timeout     { fail "$test: timeout" }
+        eof         { fail "$test: EOF" }
+        default     { fail $test }
+    }
+
+    # TODO check that all issue fields in show
+    # were seen correctly
+
+    return {}
+}
+
+# Expect block for the `git issius show` command.
+# myshow is a reference to the values expected to be output by the command. If
+# the command is successful, created_on and updated_on elements are added to
+# myshow array.
+# If all is true, it expects the output of `git issius show --all`.
+# If successful, it calls pass, otherwise it calls fail.
+proc show_issue {test myshow all} {
+    upvar $myshow show
+    global C
+
+    set issue_template "^${C}Id$C:$C $C$show(id)$C\r
+${C}Title$C:$C $C$show(title)$C\r
+${C}Type$C:$C $C[string totitle $show(type)]$C\r
+${C}Severity$C:$C $C[string totitle $show(severity)]$C\r
+${C}Reported From$C:$C ${C}$show(reported_from)$C\r
+${C}Assigned To$C:$C ${C}$show(assigned_to)$C\r
+${C}Created On$C:$C ${C}(.*?)$C\r
+${C}Updated On$C:$C ${C}(.*?)$C\r
+${C}Status$C:$C $C[string totitle $show(status)]$C\r
+${C}Description$C:$C\r
+  $C$show(desc1)$C\r
+  $C$show(desc2)$C\r
+"
+
+    if {$all} {
+        set issue_template [string cat $issue_template \
+"${C}-----$C\r
+${C}Reported From$C:$C ${C}$show(comment_reported_from)$C\r
+${C}Created On$C:$C ${C}.*$C\r
+${C}Description$C:$C\r
+  $C$show(comment1)$C\r
+  $C$show(comment2)$C\r
+${C}-----$C\r
+"]
+    }
+
+    expect {
+        -re "$issue_template" {
+            set show(created_on) $expect_out(1,string)
+            set show(updated_on) $expect_out(2,string)
+            pass $test
+        }
+
+        timeout     { fail "$test: timeout" }
+        eof         { fail "$test: EOF" }
+        default     { fail $test }
+    }
+}
+
+# Expect block for the `git issius list` command.
+# show_dict is a dictionary where the keys are the issues ids to be listed and
+# each value is a dictionary with the corresponding issue values
+# (with the same structure as the show array).
+# total is the expected total number of issues listed.
+# If successful, it calls pass, otherwise it calls fail.
+proc list_issues {test show_dict {total {}}} {
+    global C
+
+    set S {\s+\|\s+} ;# field sepatator: " | "
+
+    set listing_header "${C}ID${C}${S}${C}Title${C}${S}${C}Assigned To${C}${S}${C}Type${C}${S}${C}Status${C}"
+
+    if {$total eq {}} {
+        set total ".*"
+    }
+
+    set listing_footer "${C}Total Issues: $total$C\r"
+
+# TODO match assigned partially if $COLUMNS=82, change $show(assigned_to) in test edit
+
+    set F {([^\r]+?)} ;# A field value in a row of the listing
+    set Fc "${S}${C}${F}${C}" ;# A complete field cell, including separator and value
+    set issue_template "${C}(\[0-9a-f\]{5})${C}${Fc}${Fc}${Fc}${Fc}(?:(${C}|\\s))*\r"
+
+    # the same as show_id but using short issue ids
+    set sid_dict [dict create]
+    dict for {issue_id show} $show_dict {
+        dict append sid_dict [string range $issue_id 0 4] $show
+    }
+
+#    puts "$test sid_dict $sid_dict"
+
+    expect_after {
+        timeout         { fail "$test: timeout" }
+        eof             { fail "$test: EOF" }
+        default         { fail $test }
+    }
+
+    expect -re "$listing_header" {
+        if {[dict size $show_dict] == 0} {
+            expect -re "$listing_footer" { pass $test }
+        } else {
+            expect {
+                -re "$issue_template" {
+                    set got_id $expect_out(1,string)
+                    if {[dict exists $sid_dict $got_id]} {
+                        dict with sid_dict $got_id {
+                            set got_title           $expect_out(2,string)
+                            set got_assigned_to     $expect_out(3,string)
+                            set got_type            $expect_out(4,string)
+                            set got_status          $expect_out(5,string)
+                            if {[string first $got_title $title] != 0} {
+                                fail "$test: title mismatch"
+                            } elseif {$got_assigned_to ne $assigned_to} {
+                                fail "$test: assigned mismatch, got $got_assigned_to, expected $assigned_to"
+                            } elseif {$got_type ne [string totitle $type]} {
+                                fail "$test: type mismatch, got $got_type, expected $type"
+                            } elseif {$got_status ne [string totitle $status]} {
+                                fail "$test: status mismatch, got $got_status, expected $status"
+                            } else {
+                                exp_continue
+                            }
+                        }
+                    } else {
+                        fail "$test unexpected issue id $got_id found in the list"
+                    }
+                }
+                -re "$listing_footer" {
+                    # TODO check that all issue ids in show_dict
+                    # were seen correctly
+                    pass $test
+                }
+            }
+        }
+    }
+
+    # clean up, ignore errors if the spawned id is already closed (because of
+    # nested expect commands)
+    catch expect_after
+}
+
+# Expect block for `git issius delete`.
+# myshow is a reference to the values expected to be prompted by the command.
+# If successful, it calls pass, otherwise it calls fail.
+# Return an empty string if successful, otherwise $show(id)
+proc delete_issue {test myshow} {
+    upvar $myshow show
+    global C
+
+    set result $show(id)
+
+    expect_after {
+        timeout         { fail "$test: timeout" }
+        eof             { fail "$test: EOF" }
+        default         { fail $test }
+    }
+
+    expect -re "Delete issue '$show(title)' \\(y\\)\\? " {
+        send "y\n"
+        expect -re "${C}Deleted issue$C: $show(id)" {
+            pass $test
+            set result {}
+        }
+    }
+
+    catch expect_after ;# clean up
+
+    return $result
+}
