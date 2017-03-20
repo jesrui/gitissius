@@ -364,13 +364,13 @@ if {$show(id) eq {}} {
 ##############################################################################
 
 set iss2(title)     {this is the second issue}
-set iss2(severity)  {high}
+set iss2(severity)  {medium}
 set iss2(type)      {feature}
-set iss2(author)    {Donald Duck <donald@example.com}
+set iss2(author)    {}
 set iss2(assign)    {}
 set iss2(status)    {}
-set iss2(desc1)     {this is the first line of the issue description}
-set iss2(desc2)     {this is the second line of the issue description}
+set iss2(desc1)     {this is the first line of the description of the second issue}
+set iss2(desc2)     {this is the second line of the description of the second issue}
 
 set show2(title)    {None}
 set show2(severity) {low}
@@ -380,6 +380,7 @@ set show2(assign)   {None}
 set show2(status)   {new}
 
 set test "add second issue"
+# TODO sleep 1 (after 1000) to ensure that iss and iss2 have different created_on and updated_on values
 spawn $PYTHON $GI add
 set iss2(id) [edit_or_add_issue $test iss2 show2]
 
@@ -389,7 +390,6 @@ set show2(id)       $iss2(id)
 set show2(title)    $iss2(title)
 set show2(severity) $iss2(severity)
 set show2(type)     $iss2(type)
-set show2(author)   $iss2(author)
 set show2(desc1)    $iss2(desc1)
 set show2(desc2)    $iss2(desc2)
 
@@ -423,6 +423,66 @@ if {$show(id) eq {}} {
     set show_dict [dict create]
     dict append show_dict $show(id) [dict create {*}[array get show]]
     spawn $PYTHON $GI my
+    list_issues $test $show_dict 1
+}
+
+##############################################################################
+
+set test "list --filter=id (substring)"
+if {$show(id) eq {}} {
+    unresolved $test
+} else {
+    set show_dict [dict create]
+    dict append show_dict $show(id) [dict create {*}[array get show]]
+    spawn $PYTHON $GI list --filter=id:[string range $show(id) 10 20]
+    list_issues $test $show_dict 1
+}
+
+##############################################################################
+
+set filter_by "
+assigned_to assigned_to__exact assigned_to__not assigned_to__startwith
+id id__exact id__not id__startswith
+reported_from reported_from__exact reported_from__not reported_from__startswith
+status status__exact status__not status__startswith title
+title__exact title__not title__startswith type
+type__exact type__not type__startswith
+"
+# TODO check
+# created_on created_on__exact created_on__not created_on__startswith
+# XXX typo: s/updated_to/updated_on/
+# updated_to updated_to__exact updated_to__not updated_to__startswith
+
+foreach f $filter_by {
+#    puts "filter '$f'"
+
+    set test "list --filter=$f"
+    if {$show(id) eq {} || $show2(id) eq {}} {
+        unresolved $test
+        continue
+    }
+
+    # The expected show array is either show or show2 depending on the filter
+    # ending.
+    if {[string first __not $f] == -1 } {
+        array set expected [array get show]
+    } else {
+        array set expected [array get show2]
+    }
+#    puts "$test expected [array get expected]"
+
+    # Map filter names to show array names
+    regsub "__.*$" $f {} tag
+    switch "$tag" {
+        assigned_to {set tag assign}
+        reported_from {set tag author}
+    }
+
+    # launch `git issius list` command and check output 
+    set show_dict [dict create]
+    dict append show_dict $expected(id) [dict create {*}[array get expected]]
+#    puts "$test tag $tag show_dict $show_dict"
+    spawn $PYTHON $GI list --filter=$f:$show($tag)
     list_issues $test $show_dict 1
 }
 
