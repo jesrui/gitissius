@@ -50,7 +50,9 @@ proc edit_or_add_issue { test myiss myshow } {
 }
 
 # Expect block for the `git issius show` command.
-# myshow is a reference to the values expected to be output by the command.
+# myshow is a reference to the values expected to be output by the command. If
+# the command is successful, created_on and updated_on elements are added to
+# myshow array.
 # If all is true, it expects the output of `git issius show --all`.
 # If successful, it calls pass, otherwise it calls fail.
 proc show_issue {test myshow all} {
@@ -63,8 +65,8 @@ ${C}Type$C:$C $C[string totitle $show(type)]$C\r
 ${C}Severity$C:$C $C[string totitle $show(severity)]$C\r
 ${C}Reported From$C:$C ${C}$show(author)$C\r
 ${C}Assigned To$C:$C ${C}$show(assign)$C\r
-${C}Created On$C:$C ${C}.*$C\r
-${C}Updated On$C:$C ${C}.*$C\r
+${C}Created On$C:$C ${C}(.*?)$C\r
+${C}Updated On$C:$C ${C}(.*?)$C\r
 ${C}Status$C:$C $C[string totitle $show(status)]$C\r
 ${C}Description$C:$C\r
   $C$show(desc1)$C\r
@@ -84,7 +86,11 @@ ${C}-----$C\r
     }
 
     expect {
-        -re "$issue_template" {pass $test}
+        -re "$issue_template" {
+            set show(created_on) $expect_out(1,string)
+            set show(updated_on) $expect_out(2,string)
+            pass $test
+        }
 
         timeout     { fail "$test: timeout" }
         eof         { fail "$test: EOF" }
@@ -379,8 +385,11 @@ set show2(author)   {Micky Mouse <micky.mouse@example.com>}
 set show2(assign)   {None}
 set show2(status)   {new}
 
+# Sleep one sec to ensure that iss and iss2 have different created_on and
+# updated_on values
+after 1000
+
 set test "add second issue"
-# TODO sleep 1 (after 1000) to ensure that iss and iss2 have different created_on and updated_on values
 spawn $PYTHON $GI add
 set iss2(id) [edit_or_add_issue $test iss2 show2]
 
@@ -442,16 +451,14 @@ if {$show(id) eq {}} {
 
 set filter_by "
 assigned_to assigned_to__exact assigned_to__not assigned_to__startwith
+created_on created_on__exact created_on__not created_on__startswith
 id id__exact id__not id__startswith
 reported_from reported_from__exact reported_from__not reported_from__startswith
 status status__exact status__not status__startswith title
 title__exact title__not title__startswith type
 type__exact type__not type__startswith
+updated_on updated_on__exact updated_on__not updated_on__startswith
 "
-# TODO check
-# created_on created_on__exact created_on__not created_on__startswith
-# XXX typo: s/updated_to/updated_on/
-# updated_to updated_to__exact updated_to__not updated_to__startswith
 
 foreach f $filter_by {
 #    puts "filter '$f'"
