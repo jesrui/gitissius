@@ -24,8 +24,8 @@ proc edit_or_add_issue { test myiss myshow } {
             { send "[string index $iss(type) 0]\n"; exp_continue }
         -ex "Severity ($show(severity)) \[h/m/l\]: "
             { send "[string index $iss(severity) 0]\n"; exp_continue }
-        -ex "Reported From ($show(author)): "	{ send "$iss(author)\n"; exp_continue }
-        -ex "Assigned To ($show(assign)): "	{ send "$iss(assign)\n"; exp_continue }
+        -ex "Reported From ($show(reported_from)): "	{ send "$iss(reported_from)\n"; exp_continue }
+        -ex "Assigned To ($show(assigned_to)): "	{ send "$iss(assigned_to)\n"; exp_continue }
         -re "Status \\($show(status)\\) \\\[.*\\\]: "
             { send "[string index $iss(status) 0]\n"; exp_continue }
         -ex {Description (End with a line containing only '.'):}
@@ -63,8 +63,8 @@ proc show_issue {test myshow all} {
 ${C}Title$C:$C $C$show(title)$C\r
 ${C}Type$C:$C $C[string totitle $show(type)]$C\r
 ${C}Severity$C:$C $C[string totitle $show(severity)]$C\r
-${C}Reported From$C:$C ${C}$show(author)$C\r
-${C}Assigned To$C:$C ${C}$show(assign)$C\r
+${C}Reported From$C:$C ${C}$show(reported_from)$C\r
+${C}Assigned To$C:$C ${C}$show(assigned_to)$C\r
 ${C}Created On$C:$C ${C}(.*?)$C\r
 ${C}Updated On$C:$C ${C}(.*?)$C\r
 ${C}Status$C:$C $C[string totitle $show(status)]$C\r
@@ -76,7 +76,7 @@ ${C}Description$C:$C\r
     if {$all} {
         set issue_template [string cat $issue_template \
 "${C}-----$C\r
-${C}Reported From$C:$C ${C}$show(comment_author)$C\r
+${C}Reported From$C:$C ${C}$show(comment_reported_from)$C\r
 ${C}Created On$C:$C ${C}.*$C\r
 ${C}Description$C:$C\r
   $C$show(comment1)$C\r
@@ -117,7 +117,7 @@ proc list_issues {test show_dict {total {}}} {
 
     set listing_footer "${C}Total Issues: $total$C\r"
 
-# TODO match assigned partially if $COLUMNS=82, change $show(assign) in test edit
+# TODO match assigned partially if $COLUMNS=82, change $show(assigned_to) in test edit
 
     set F {([^\r]+?)} ;# A field value in a row of the listing
     set Fc "${S}${C}${F}${C}" ;# A complete field cell, including separator and value
@@ -146,14 +146,14 @@ proc list_issues {test show_dict {total {}}} {
                     set got_id $expect_out(1,string)
                     if {[dict exists $sid_dict $got_id]} {
                         dict with sid_dict $got_id {
-                            set got_title   $expect_out(2,string)
-                            set got_assign  $expect_out(3,string)
-                            set got_type    $expect_out(4,string)
-                            set got_status  $expect_out(5,string)
+                            set got_title           $expect_out(2,string)
+                            set got_assigned_to     $expect_out(3,string)
+                            set got_type            $expect_out(4,string)
+                            set got_status          $expect_out(5,string)
                             if {[string first $got_title $title] != 0} {
                                 fail "$test: title mismatch"
-                            } elseif {$got_assign ne $assign} {
-                                fail "$test: assigned mismatch, got $got_assign, expected $assign"
+                            } elseif {$got_assigned_to ne $assigned_to} {
+                                fail "$test: assigned mismatch, got $got_assigned_to, expected $assigned_to"
                             } elseif {$got_type ne [string totitle $type]} {
                                 fail "$test: type mismatch, got $got_type, expected $type"
                             } elseif {$got_status ne [string totitle $status]} {
@@ -230,24 +230,24 @@ set timeout 3
 # The iss array contains the issue values entered on `git issius add`
 # or `edit`.
 # Empty strings are used to accept default values.
-set iss(title)      {this is the issue title. It is so long that it will be trimmed by `git issius list`}
-set iss(severity)   {}
-set iss(type)       {}
-set iss(author)     {Donald Duck <donald@example.com}
-set iss(assign)     {}
-set iss(status)     {}
-set iss(desc1)      {this is the first line of the issue description}
-set iss(desc2)      {this is the second line of the issue description}
+set iss(title)              {this is the issue title. It is so long that it will be trimmed by `git issius list`}
+set iss(severity)           {}
+set iss(type)               {}
+set iss(reported_from)      {Donald Duck <donald@example.com}
+set iss(assigned_to)        {}
+set iss(status)             {}
+set iss(desc1)              {this is the first line of the issue description}
+set iss(desc2)              {this is the second line of the issue description}
 
 # The show array contains the issue values shown on the `git issius add`
 # or `edit` prompts and `show` and `list` commands.
 # The values will be transformed as needed, e.g. capitalized.
-set show(title)      {None}
-set show(severity)   {low}
-set show(type)       {bug}
-set show(author)     {Micky Mouse <micky.mouse@example.com>}
-set show(assign)     {None}
-set show(status)     {new}
+set show(title)             {None}
+set show(severity)          {low}
+set show(type)              {bug}
+set show(reported_from)     {Micky Mouse <micky.mouse@example.com>}
+set show(assigned_to)       {None}
+set show(status)            {new}
 
 set test "add issue"
 spawn $PYTHON $GI add
@@ -255,11 +255,11 @@ set iss(id) [edit_or_add_issue $test iss show]
 
 ##############################################################################
 
-set show(id)         $iss(id)
-set show(title)      $iss(title)
-set show(author)     $iss(author)
-set show(desc1)      $iss(desc1)
-set show(desc2)      $iss(desc2)
+set show(id)                $iss(id)
+set show(title)             $iss(title)
+set show(reported_from)     $iss(reported_from)
+set show(desc1)             $iss(desc1)
+set show(desc2)             $iss(desc2)
 
 set test "show issue"
 if {$show(id) eq {}} {
@@ -271,11 +271,11 @@ if {$show(id) eq {}} {
 
 ##############################################################################
 
-set iss(comment_author) {}
-set iss(comment1)      {this is the first line of the issue comment}
-set iss(comment2)      {this is the second line of the issue comment}
+set iss(comment_reported_from)  {}
+set iss(comment1)               {this is the first line of the issue comment}
+set iss(comment2)               {this is the second line of the issue comment}
 
-set show(comment_author) {Micky Mouse <micky.mouse@example.com>}
+set show(comment_reported_from) {Micky Mouse <micky.mouse@example.com>}
 
 set test "add issue comment"
 if {$show(id) eq {}} {
@@ -290,8 +290,8 @@ if {$show(id) eq {}} {
     }
 
     expect -re "${C}Commenting on:$C ${C}$show(title)$C" {
-        expect -ex "Reported From \($show(comment_author)\): " {
-            send "$iss(comment_author)\n"
+        expect -ex "Reported From \($show(comment_reported_from)\): " {
+            send "$iss(comment_reported_from)\n"
             expect -ex {Description (End with a line containing only '.'): } {
                 send "$iss(comment1)\n$iss(comment2)\n.\n"
                 expect -ex "Comment issue: $show(id)" { pass $test }
@@ -330,7 +330,7 @@ if {$show(id) eq {}} {
 ##############################################################################
 
 set iss(severity)   {high}
-set iss(assign)     {Micky Mouse <micky.mouse@example.com>}
+set iss(assigned_to)     {Micky Mouse <micky.mouse@example.com>}
 set iss(status)     {assigned}
 
 set test "edit issue"
@@ -343,9 +343,9 @@ if {$show(id) eq {}} {
 
 ##############################################################################
 
-set show(severity)   $iss(severity)
-set show(assign)     $iss(assign)
-set show(status)     $iss(status)
+set show(severity)          $iss(severity)
+set show(assigned_to)       $iss(assigned_to)
+set show(status)            $iss(status)
 
 set test "show edited issue (with comments)"
 if {$show(id) eq {}} {
@@ -369,21 +369,21 @@ if {$show(id) eq {}} {
 
 ##############################################################################
 
-set iss2(title)     {this is the second issue}
-set iss2(severity)  {medium}
-set iss2(type)      {feature}
-set iss2(author)    {}
-set iss2(assign)    {}
-set iss2(status)    {}
-set iss2(desc1)     {this is the first line of the description of the second issue}
-set iss2(desc2)     {this is the second line of the description of the second issue}
+set iss2(title)             {this is the second issue}
+set iss2(severity)          {medium}
+set iss2(type)              {feature}
+set iss2(reported_from)     {}
+set iss2(assigned_to)       {}
+set iss2(status)            {}
+set iss2(desc1)             {this is the first line of the description of the second issue}
+set iss2(desc2)             {this is the second line of the description of the second issue}
 
-set show2(title)    {None}
-set show2(severity) {low}
-set show2(type)     {bug}
-set show2(author)   {Micky Mouse <micky.mouse@example.com>}
-set show2(assign)   {None}
-set show2(status)   {new}
+set show2(title)            {None}
+set show2(severity)         {low}
+set show2(type)             {bug}
+set show2(reported_from)    {Micky Mouse <micky.mouse@example.com>}
+set show2(assigned_to)      {None}
+set show2(status)           {new}
 
 # Sleep one sec to ensure that iss and iss2 have different created_on and
 # updated_on values
@@ -395,12 +395,12 @@ set iss2(id) [edit_or_add_issue $test iss2 show2]
 
 ##############################################################################
 
-set show2(id)       $iss2(id)
-set show2(title)    $iss2(title)
-set show2(severity) $iss2(severity)
-set show2(type)     $iss2(type)
-set show2(desc1)    $iss2(desc1)
-set show2(desc2)    $iss2(desc2)
+set show2(id)               $iss2(id)
+set show2(title)            $iss2(title)
+set show2(severity)         $iss2(severity)
+set show2(type)             $iss2(type)
+set show2(desc1)            $iss2(desc1)
+set show2(desc2)            $iss2(desc2)
 
 set test "show second issue"
 if {$show2(id) eq {}} {
@@ -480,10 +480,6 @@ foreach f $filter_by {
 
     # Map filter names to show array names
     regsub "__.*$" $f {} tag
-    switch "$tag" {
-        assigned_to {set tag assign}
-        reported_from {set tag author}
-    }
 
     # launch `git issius list` command and check output 
     set show_dict [dict create]
