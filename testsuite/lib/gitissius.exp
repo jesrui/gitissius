@@ -55,21 +55,58 @@ proc edit_or_add_issue { test myiss myshow } {
 
     set is_add [expr {[array get iss id] == {}}]
 
+    set labels {title type severity reported_from assigned_to status desc confirm}
+
     expect {
-        -ex "Title ($show(title)): " { send "$iss(title)\n"; exp_continue }
-        -ex "Type ($show(type)) \[b/f\]: "
-            { send "[string index $iss(type) 0]\n"; exp_continue }
-        -ex "Severity ($show(severity)) \[h/m/l\]: "
-            { send "[string index $iss(severity) 0]\n"; exp_continue }
-        -ex "Reported From ($show(reported_from)): "	{ send "$iss(reported_from)\n"; exp_continue }
-        -ex "Assigned To ($show(assigned_to)): "	{ send "$iss(assigned_to)\n"; exp_continue }
-        -re "Status \\($show(status)\\) \\\[.*\\\]: "
-            { send "[string index $iss(status) 0]\n"; exp_continue }
-        -ex {Description (End with a line containing only '.'):}
-            { send "$iss(desc1)\n$iss(desc2)\n.\n"; exp_continue }
-        -ex [expr {$is_add ? {Create issue (y)? } : {Save changes (y)? }}]
-            { send "\n"; exp_continue }
+        -ex "Title ($show(title)): " {
+            send "$iss(title)\n"
+            set seen(title) 1
+            exp_continue
+        }
+        -ex "Type ($show(type)) \[b/f\]: " {
+            send "[string index $iss(type) 0]\n"
+            set seen(type) 1
+            exp_continue
+        }
+        -ex "Severity ($show(severity)) \[h/m/l\]: " {
+            send "[string index $iss(severity) 0]\n"
+            set seen(severity) 1
+            exp_continue
+        }
+        -ex "Reported From ($show(reported_from)): " {
+            send "$iss(reported_from)\n"
+            set seen(reported_from) 1
+            exp_continue
+        }
+        -ex "Assigned To ($show(assigned_to)): " {
+            send "$iss(assigned_to)\n"
+            set seen(assigned_to) 1
+            exp_continue
+        }
+        -re "Status \\($show(status)\\) \\\[.*\\\]: " {
+            send "[string index $iss(status) 0]\n"
+            set seen(status) 1
+            exp_continue
+        }
+        -ex {Description (End with a line containing only '.'):} {
+            send "$iss(desc1)\n$iss(desc2)\n.\n"
+            set seen(desc) 1
+            exp_continue
+        }
+        -ex [expr {$is_add ? {Create issue (y)? } : {Save changes (y)? }}] {
+            send "\n"
+            set seen(confirm) 1
+            exp_continue
+        }
         -re [expr {$is_add ? "Created issue: ($Id)" : "Edited issue: ($Id)"}] {
+            # check that all issue fields in array show were asked as expected
+            foreach n $labels {
+                if {[array names seen $n] eq {}} {
+                    fail "$test: didn't get asked for $n"
+                    return {}
+                }
+            }
+
             set issue_id $expect_out(1,string)
             pass $test
             return $issue_id
@@ -79,9 +116,6 @@ proc edit_or_add_issue { test myiss myshow } {
         eof         { fail "$test: EOF" }
         default     { fail $test }
     }
-
-    # TODO check that all issue fields in show
-    # were seen correctly
 
     return {}
 }
