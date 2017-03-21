@@ -18,6 +18,9 @@ set timeout 3
 
 ##############################################################################
 
+array unset iss
+array unset show
+
 # The iss array contains the issue values entered on `git issius add`
 # or `edit`.
 # Empty strings are used to accept default values.
@@ -120,9 +123,9 @@ if {$show(id) eq {}} {
 
 ##############################################################################
 
-set iss(severity)   {high}
-set iss(assigned_to)     {Micky Mouse <micky.mouse@example.com>}
-set iss(status)     {assigned}
+set iss(severity)           {high}
+set iss(assigned_to)        {Micky Mouse <micky.mouse@example.com>}
+set iss(status)             {assigned}
 
 set test "edit issue"
 if {$show(id) eq {}} {
@@ -160,6 +163,9 @@ if {$show(id) eq {}} {
 
 ##############################################################################
 
+array unset iss2
+array unset show2
+
 set iss2(title)             {this is the second issue}
 set iss2(severity)          {medium}
 set iss2(type)              {feature}
@@ -175,10 +181,6 @@ set show2(type)             {bug}
 set show2(reported_from)    {Micky Mouse <micky.mouse@example.com>}
 set show2(assigned_to)      {None}
 set show2(status)           {new}
-
-# Sleep one sec to ensure that iss and iss2 have different created_on and
-# updated_on values
-after 1000
 
 set test "add second issue"
 spawn $PYTHON $GI add
@@ -223,60 +225,6 @@ if {$show(id) eq {}} {
     set show_dict [dict create]
     dict append show_dict $show(id) [dict create {*}[array get show]]
     spawn $PYTHON $GI my
-    list_issues $test $show_dict 1
-}
-
-##############################################################################
-
-set test "list --filter=id (substring)"
-if {$show(id) eq {}} {
-    unresolved $test
-} else {
-    set show_dict [dict create]
-    dict append show_dict $show(id) [dict create {*}[array get show]]
-    spawn $PYTHON $GI list --filter=id:[string range $show(id) 10 20]
-    list_issues $test $show_dict 1
-}
-
-##############################################################################
-
-set filter_by "
-assigned_to assigned_to__exact assigned_to__not assigned_to__startwith
-created_on created_on__exact created_on__not created_on__startswith
-id id__exact id__not id__startswith
-reported_from reported_from__exact reported_from__not reported_from__startswith
-status status__exact status__not status__startswith title
-title__exact title__not title__startswith type
-type__exact type__not type__startswith
-updated_on updated_on__exact updated_on__not updated_on__startswith
-"
-
-foreach f $filter_by {
-#    puts "filter '$f'"
-
-    set test "list --filter=$f"
-    if {$show(id) eq {} || $show2(id) eq {}} {
-        unresolved $test
-        continue
-    }
-
-    # The expected show array is either show or show2 depending on the filter
-    # ending.
-    if {[string first __not $f] == -1 } {
-        array set expected [array get show]
-    } else {
-        array set expected [array get show2]
-    }
-#    puts "$test expected [array get expected]"
-
-    # Map filter names to show array names
-    regsub "__.*$" $f {} tag
-
-    # launch `git issius list` command and check output 
-    set show_dict [dict create]
-    dict append show_dict $expected(id) [dict create {*}[array get expected]]
-#    puts "$test tag $tag show_dict $show_dict"
-    spawn $PYTHON $GI list --filter=$f:$show($tag)
     list_issues $test $show_dict 1
 }
 

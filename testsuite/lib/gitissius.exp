@@ -4,14 +4,18 @@ set Id {[0-9a-f]{64}}
 set C {(?:\e\[[0-9;]*m)*}
 
 proc ${tool}_init {args} {
-    puts tool_init
+    global tmpdir
+    global srcdir
 
     set env(LC_ALL) "C"
+
+    cd $srcdir
 
     global tmpdir
     if ![file isdirectory $tmpdir] {exec mkdir -p $tmpdir}
 
     set repo $tmpdir/repo
+    exec rm -rf "$repo"
     assert_cmd_run git "init $repo"
 
     cd $repo
