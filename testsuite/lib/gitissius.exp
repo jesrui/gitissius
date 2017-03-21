@@ -208,6 +208,8 @@ proc list_issues {test show_dict {total {}}} {
         default         { fail $test }
     }
 
+    set ids_seen [dict create]
+
     expect -re "$listing_header" {
         if {[dict size $show_dict] == 0} {
             expect -re "$listing_footer" { pass $test }
@@ -230,17 +232,28 @@ proc list_issues {test show_dict {total {}}} {
                             } elseif {$got_status ne [string totitle $status]} {
                                 fail "$test: status mismatch, got $got_status, expected $status"
                             } else {
+                                dict append ids_seen [dict get $sid_dict $got_id id]
                                 exp_continue
                             }
                         }
                     } else {
-                        fail "$test unexpected issue id $got_id found in the list"
+                        fail "$test: unexpected issue id $got_id found in the list"
                     }
                 }
                 -re "$listing_footer" {
-                    # TODO check that all issue ids in show_dict
-                    # were seen correctly
-                    pass $test
+                    # check that all issue ids in show_dict were seen correctly
+                    set ok 1
+                    foreach id [dict keys $show_dict] {
+                        if {![dict exists $ids_seen $id]} {
+                            fail "$test: expected issue id $id not found in the list"
+                            set ok 0
+                            break
+                        }
+                    }
+
+                    if {$ok} {
+                        pass $test
+                    }
                 }
             }
         }
