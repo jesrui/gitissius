@@ -170,12 +170,13 @@ ${C}-----$C\r
 }
 
 # Expect block for the `git issius list` command.
-# show_dict is a dictionary where the keys are the issues ids to be listed and
+# show_dict is a dictionary where the keys are the issue ids to be listed and
 # each value is a dictionary with the corresponding issue values
 # (with the same structure as the show array).
 # total is the expected total number of issues listed.
+# order is a optional list that contains the issue ids in the expected listing order.
 # If successful, it calls pass, otherwise it calls fail.
-proc list_issues {test show_dict {total {}}} {
+proc list_issues {test show_dict {total {}} {order {}}} {
     global C
 
     set S {\s+\|\s+} ;# field sepatator: " | "
@@ -210,6 +211,8 @@ proc list_issues {test show_dict {total {}}} {
 
     set ids_seen [dict create]
 
+    set order_idx 0
+
     expect -re "$listing_header" {
         if {[dict size $show_dict] == 0} {
             expect -re "$listing_footer" { pass $test }
@@ -232,8 +235,13 @@ proc list_issues {test show_dict {total {}}} {
                             } elseif {$got_status ne [string totitle $status]} {
                                 fail "$test: status mismatch, got $got_status, expected $status"
                             } else {
-                                dict append ids_seen [dict get $sid_dict $got_id id]
-                                exp_continue
+                                if {$order ne {} && [set id_exp [lindex $order $order_idx]] ne $id} {
+                                    fail "$test: listing order mismatch, got $id, expected $id_exp"
+                                } else {
+                                    incr order_idx
+                                    dict append ids_seen $id
+                                    exp_continue
+                                }
                             }
                         }
                     } else {

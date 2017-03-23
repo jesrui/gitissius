@@ -12,7 +12,6 @@ set iss(status)             {assigned}
 set iss(desc1)              {this is the first line of the issue description}
 set iss(desc2)              {this is the second line of the issue description}
 
-
 set show(title)             {None}
 set show(severity)          {low}
 set show(type)              {bug}
@@ -135,3 +134,36 @@ if {$show(id) eq {}} {
     list_issues $test $show_dict 1
 }
 
+##############################################################################
+
+set sorted_ids [lsort "$show(id)    $show2(id)"]
+set sort_order {
+    assigned_to     "$show2(id)   $show(id)"
+    created_on      "$show(id)    $show2(id)"
+    id              $sorted_ids
+    reported_from   "$show(id)    $show2(id)"
+    status          "$show(id)    $show2(id)"
+    title           "$show(id)    $show2(id)"
+    type            "$show(id)    $show2(id)"
+    updated_on      "$show(id)    $show2(id)"
+}
+
+foreach {order id_order} $sort_order {
+    set test "list --sort=$order"
+
+    if {$show(id) eq {} || $show2(id) eq {}} {
+        unresolved $test
+        continue
+    }
+
+    set show_dict [dict create]
+    dict append show_dict $show(id) [dict create {*}[array get show]]
+    dict append show_dict $show2(id) [dict create {*}[array get show2]]
+
+    set id_order [subst $id_order]
+
+    spawn $PYTHON $GI list --sort=$order
+    list_issues $test $show_dict 2 $id_order
+}
+
+##############################################################################
