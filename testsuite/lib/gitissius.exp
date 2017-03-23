@@ -42,13 +42,26 @@ proc assert_cmd_run {cmd cmdargs} {
     return $exec_output
 }
 
+# The show_default array contains the default issue values shown on the `git issius add`
+# or `edit` prompts.
+# The values will be transformed as needed, e.g. capitalized.
+array unset show_default
+array set show_default {
+    title           {None}
+    severity        {low}
+    type            {bug}
+    reported_from   {Micky Mouse <micky.mouse@example.com>}
+    assigned_to     {None}
+    status          {new}
+}
+
 # Expect block for `git issius add` and `git issius edit`.
 # Execute an `add` command if $iss(id) is empty, `edit` if it is not empty.
 # myiss is a reference to the values to be entered for the issue.
 # myshow is a reference to the values expected to be prompted by the command.
 # If successful, it calls pass, otherwise it calls fail.
 # Return the issue id just created or edited if successful, otherwise an empty string.
-proc edit_or_add_issue { test myiss myshow } {
+proc edit_or_add_issue { test myiss {myshow show_default}} {
     upvar $myiss iss
     upvar $myshow show
     global Id
