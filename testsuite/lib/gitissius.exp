@@ -313,3 +313,24 @@ proc delete_issue {test myshow} {
 
     return $result
 }
+
+# Expect block for `git issius close`.
+# myshow is a reference to the values expected to be prompted by the command.
+# If successful, it calls pass, otherwise it calls fail.
+# Return $show(id) if successful, otherwise an empty string.
+proc close_issue {test myshow} {
+    upvar $myshow show
+
+    expect {
+        -ex "Closed issue: $show(id)" {
+            pass $test
+            return $show(id)
+        }
+
+        timeout         { fail "$test: timeout" }
+        eof             { fail "$test: EOF" }
+        default         { fail $test }
+    }
+
+    return {}
+}

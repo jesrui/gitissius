@@ -161,3 +161,81 @@ foreach {order id_order} $sort_order {
 }
 
 ##############################################################################
+
+set test "close issue"
+if {$show(id) eq {}} {
+    unresolved $test
+} else {
+    spawn $PYTHON $GI close $show(id)
+    if {[close_issue $test show] eq $show(id)} {
+        set iss(status)    {closed}
+        set show(status)   $iss(status)
+    }
+}
+
+#############################################################################
+
+set test "list (closed issue)"
+# closed issues aren't listed by default
+if {$show(id) eq {} || $show2(id) eq {}} {
+    unresolved $test
+} else {
+    set show_dict [dict create]
+    dict append show_dict $show2(id) [dict create {*}[array get show2]]
+    spawn $PYTHON $GI list
+    list_issues $test $show_dict 1
+}
+
+#############################################################################
+
+set test "list --all (closed issue)"
+# `list --all` lists closed issues too
+if {$show(id) eq {} || $show2(id) eq {}} {
+    unresolved $test
+} else {
+    set show_dict [dict create]
+    dict append show_dict $show(id) [dict create {*}[array get show]]
+    dict append show_dict $show2(id) [dict create {*}[array get show2]]
+    spawn $PYTHON $GI list --all
+    list_issues $test $show_dict 2
+}
+
+#############################################################################
+
+set test "edit issue (change status to invalid)"
+if {$show(id) eq {}} {
+    unresolved $test
+} else {
+    set iss(status)     {invalid}
+    spawn $PYTHON $GI edit $show(id)
+    if {[edit_or_add_issue $test iss show] eq $iss(id)} {
+        set show(status)   $iss(status)
+    }
+}
+
+#############################################################################
+
+set test "list (invalid issue)"
+# invalid issues aren't listed by default
+if {$show(id) eq {} || $show2(id) eq {}} {
+    unresolved $test
+} else {
+    set show_dict [dict create]
+    dict append show_dict $show2(id) [dict create {*}[array get show2]]
+    spawn $PYTHON $GI list
+    list_issues $test $show_dict 1
+}
+
+#############################################################################
+
+set test "list --all (invalid issue)"
+# `list --all` lists invalid issues too
+if {$show(id) eq {} || $show2(id) eq {}} {
+    unresolved $test
+} else {
+    set show_dict [dict create]
+    dict append show_dict $show(id) [dict create {*}[array get show]]
+    dict append show_dict $show2(id) [dict create {*}[array get show2]]
+    spawn $PYTHON $GI list --all
+    list_issues $test $show_dict 2
+}
