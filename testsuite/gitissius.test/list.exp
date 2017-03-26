@@ -20,17 +20,7 @@ set iss(id) [edit_or_add_issue $test iss]
 
 array unset show
 array set show [array get show_default]
-array set show [subst {
-    id              "$iss(id)"
-    title           "$iss(title)"
-    severity        "$iss(severity)"
-    type            "$iss(type)"
-    reported_from   "$iss(reported_from)"
-    assigned_to     "$iss(assigned_to)"
-    status          "$iss(status)"
-    desc1           "$iss(desc1)"
-    desc2           "$iss(desc2)"
-}]
+update_show show iss {id title severity type reported_from assigned_to status desc1 desc2}
 
 set test "prepare issue 1 (show)"
 spawn $PYTHON $GI show $show(id)
@@ -62,14 +52,7 @@ set iss2(id) [edit_or_add_issue $test iss2]
 
 array unset show2
 array set show2 [array get show_default]
-array set show2 [subst {
-    id               "$iss2(id)"
-    title            "$iss2(title)"
-    severity         "$iss2(severity)"
-    type             "$iss2(type)"
-    desc1            "$iss2(desc1)"
-    desc2            "$iss2(desc2)"
-}]
+update_show show2 iss2 {id title severity type desc1 desc2}
 
 set test "prepare issue 2 (show)"
 spawn $PYTHON $GI show $show2(id)

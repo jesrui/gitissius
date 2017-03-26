@@ -55,6 +55,16 @@ array set show_default {
     status          {new}
 }
 
+# copy (and overwrite) the given iss fields in show array
+proc update_show {myshow myiss fields} {
+    upvar $myiss iss
+    upvar $myshow show
+
+    foreach f $fields {
+        set show($f) $iss($f)
+    }
+}
+
 # Expect block for `git issius add` and `git issius edit`.
 # Execute an `add` command if $iss(id) is empty, `edit` if it is not empty.
 # myiss is a reference to the values to be entered for the issue.

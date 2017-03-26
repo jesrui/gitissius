@@ -18,7 +18,6 @@ set timeout 3
 
 ##############################################################################
 
-
 # The iss array contains the issue values entered on `git issius add`
 # or `edit`.
 # Empty strings are used to accept default values.
@@ -44,14 +43,10 @@ set iss(id) [edit_or_add_issue $test iss]
 # or `edit` prompts and `show` and `list` commands.
 # The values will be transformed as needed, e.g. capitalized.
 array unset show
-array set show [array get show_default]
-array set show [subst {
-    id              "$iss(id)"
-    title           "$iss(title)"
-    reported_from   "$iss(reported_from)"
-    desc1           "$iss(desc1)"
-    desc2           "$iss(desc2)"
-}]
+if {$iss(id) ne {}} {
+    array set show [array get show_default]
+    update_show show iss {id title reported_from desc1 desc2}
+}
 
 set test "show issue"
 if {$show(id) eq {}} {
@@ -98,8 +93,7 @@ if {$show(id) eq {}} {
 
 ##############################################################################
 
-set show(comment1) $iss(comment1)
-set show(comment2) $iss(comment2)
+update_show show iss {comment1 comment2}
 
 set test "show issue with comments"
 if {$show(id) eq {}} {
@@ -134,14 +128,12 @@ if {$show(id) eq {}} {
     unresolved $test
 } else {
     spawn $PYTHON $GI edit $show(id)
-    edit_or_add_issue $test iss show
+    if {[edit_or_add_issue $test iss show] eq $show(id)} {
+        update_show show iss {severity assigned_to status}
+    }
 }
 
 ##############################################################################
-
-set show(severity)          $iss(severity)
-set show(assigned_to)       $iss(assigned_to)
-set show(status)            $iss(status)
 
 set test "show edited issue (with comments)"
 if {$show(id) eq {}} {
@@ -184,15 +176,10 @@ set iss2(id) [edit_or_add_issue $test iss2]
 ##############################################################################
 
 array unset show2
-array set show2 [array get show_default]
-array set show2 [subst {
-    id              "$iss2(id)"
-    title           "$iss2(title)"
-    severity        "$iss2(severity)"
-    type            "$iss2(type)"
-    desc1           "$iss2(desc1)"
-    desc2           "$iss2(desc2)"
-}]
+if {$iss2(id) ne {}} {
+    array set show2 [array get show_default]
+    update_show show2 iss2 {id title severity type desc1 desc2}
+}
 
 set test "show second issue"
 if {$show2(id) eq {}} {
