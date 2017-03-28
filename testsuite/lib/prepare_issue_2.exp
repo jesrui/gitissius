@@ -1,0 +1,29 @@
+##############################################################################
+
+array unset iss2
+array set iss2 {
+    title           {this is the second issue}
+    severity        {medium}
+    type            {feature}
+    reported_from   {}
+    assigned_to     {}
+    status          {}
+    desc1           {this is the first line of the description of the second issue}
+    desc2           {this is the second line of the description of the second issue}
+}
+
+set test "prepare issue 2 (add)"
+spawn $PYTHON $GI add
+set iss2(id) [edit_or_add_issue $test iss2]
+
+##############################################################################
+
+array unset show2
+array set show2 [array get show_default]
+update_show show2 iss2 {id title severity type desc1 desc2}
+
+set test "prepare issue 2 (show)"
+spawn $PYTHON $GI show $show2(id)
+show_issue $test show2 false
+
+##############################################################################

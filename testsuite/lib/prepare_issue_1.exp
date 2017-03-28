@@ -1,0 +1,29 @@
+##############################################################################
+
+array unset iss
+array set iss {
+    title           {this is the issue title. It is so long that it will be trimmed by `git issius list`}
+    severity        {high}
+    type            {bug}
+    reported_from   {Donald Duck <donald@example.com}
+    assigned_to     {Micky Mouse <micky.mouse@example.com>}
+    status          {assigned}
+    desc1           {this is the first line of the issue description}
+    desc2           {this is the second line of the issue description}
+}
+
+set test "prepare issue 1 (add)"
+spawn $PYTHON $GI add
+set iss(id) [edit_or_add_issue $test iss]
+
+##############################################################################
+
+array unset show
+array set show [array get show_default]
+update_show show iss {id title severity type reported_from assigned_to status desc1 desc2}
+
+set test "prepare issue 1 (show)"
+spawn $PYTHON $GI show $show(id)
+show_issue $test show false
+
+##############################################################################
