@@ -1,0 +1,89 @@
+##############################################################################
+
+proc cd_repo {repo} {
+    global tmpdir
+    cd $tmpdir
+    cd $repo
+}
+
+proc clone_repo {} {
+    global tmpdir
+
+    set repo2 $tmpdir/repo2
+    assert_cmd_run rm "-rf $repo2"
+
+    cd $tmpdir
+    assert_cmd_run git "clone repo repo2"
+
+    cd $repo2
+
+    global git_user_name git_user_email
+    assert_cmd_run git "config user.name \"$git_user_name\""
+    assert_cmd_run git "config user.email $git_user_email"
+}
+
+##############################################################################
+
+# XXX we really need a `git issius init` command
+set test "init gitissius on repo (create gitissius branch)"
+spawn $PYTHON $GI
+expect eof {
+#    puts "$test: $expect_out(buffer)"
+    pass $test
+}
+
+##############################################################################
+
+clone_repo
+
+cd_repo repo2
+
+set test "init gitissius on repo2 (copy gitissius branch)"
+spawn $PYTHON $GI
+expect eof {
+#    puts "$test: $expect_out(buffer)"
+    pass $test
+}
+
+##############################################################################
+
+# add issue 1 to repo
+cd_repo repo
+source [file join $srcdir lib prepare_issue_1.exp]
+
+##############################################################################
+
+# XXX Sleep one sec to ensure that iss and iss2 have different Ids
+after 1000
+
+# add issue 2 to repo2
+cd_repo repo2
+source [file join $srcdir lib prepare_issue_2.exp]
+
+##############################################################################
+
+set test "pull"
+spawn $PYTHON $GI pull
+expect eof {
+#    puts "$test: $expect_out(buffer)"
+    # there should be no output, except maybe some color escape sequences
+    if {[regexp "^$C$" $expect_out(buffer)]} {
+        pass $test
+    } else {
+        fail "$test: $expect_out(buffer)"
+    }
+}
+
+##############################################################################
+
+set test "list issues in cloned repo"
+
+if {$show(id) eq {} || $show2(id) eq {}} {
+    unresolved $test
+} else {
+    set show_dict [dict create]
+    dict append show_dict $show(id) [dict create {*}[array get show]]
+    dict append show_dict $show2(id) [dict create {*}[array get show2]]
+    spawn $PYTHON $GI list
+    list_issues $test $show_dict 2
+}
