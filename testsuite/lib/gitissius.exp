@@ -32,14 +32,14 @@ proc ${tool}_init {args} {
     assert_cmd_run git "commit -m init"
 }
 
+# run command, throw in case of error
 proc assert_cmd_run {cmd cmdargs} {
     set state [remote_exec host $cmd $cmdargs]
     set status [lindex $state 0]
     set exec_output [lindex $state 1]
     if {$status != 0} {
-        perror "command failed: $exec_output"
+        throw "CHILDSTATUS 0 $status" "command failed: $cmd $cmdargs: $exec_output"
     }
-    return $exec_output
 }
 
 # The show_default array contains the default issue values shown on the `git issius add`
