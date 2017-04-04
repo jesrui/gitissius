@@ -8,6 +8,8 @@ import sys, locale
 # https://stackoverflow.com/questions/477061/how-to-read-unicode-input-and-compare-unicode-strings-in-python
 ENCODING = sys.stdin.encoding or locale.getpreferredencoding(True)
 
+COLOR_RESET = common.colorama.Style.RESET_ALL if common.colorama else ""
+
 readline.parse_and_bind('tab: complete')
 
 class DbProperty(object):
@@ -46,7 +48,7 @@ class DbProperty(object):
         if common.colorama:
             color = self._color.get(attr, None)
             if color:
-                value = color + value + common.colorama.Style.RESET_ALL
+                value = color + value + COLOR_RESET
 
         return value
 
@@ -131,7 +133,7 @@ class Option(DbProperty):
             value = getattr(self, attr)
             if common.colorama:
                 value = self.options[value].get('color', '') + value.capitalize()
-                value += common.colorama.Style.RESET_ALL
+                value += COLOR_RESET
 
             else:
                 value = value.capitalize()
