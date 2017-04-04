@@ -13,10 +13,12 @@ class Command(commands.GitissiusCommand):
         super(Command, self).__init__()
 
         self.parser.add_option("--sort",
-                               help="Sort results using key")
+                               metavar='KEY',
+                               help="Sort results using KEY")
         self.parser.add_option("--filter",
                                default=None,
-                               help="Filter result using key")
+                               metavar='KEY:VAL',
+                               help="show only issues where KEY matches VAL (e.g. type:bug)")
         self.parser.add_option("--all",
                                default=False,
                                action="store_true",
