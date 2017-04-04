@@ -10,4 +10,5 @@ class Command(commands.GitissiusCommand):
     help = "Push issues upstream"
 
     def _execute(self, options, args):
-        gitshelve.git('push')
+        # TODO use git config branch.gitissius.remote instead of hardcoded origin
+        gitshelve.git('push', 'origin', 'gitissius')
