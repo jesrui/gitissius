@@ -77,6 +77,9 @@ proc edit_or_add_issue { test myiss {myshow show_default}} {
 
     set labels {title type severity reported_from assigned_to status desc confirm}
 
+    # Keep track of issue fields seen as expected
+    array set seen {}
+
     expect {
         -ex "Title ($show(title)): " {
             send "$iss(title)\n"

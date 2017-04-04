@@ -28,11 +28,8 @@ foreach f $filter_by {
 
     # The expected show array is either show or show2 depending on the filter
     # ending.
-    if {[string first __not $f] == -1 } {
-        array set expected [array get show]
-    } else {
-        array set expected [array get show2]
-    }
+    array set expected \
+        [if {[string first __not $f] == -1} {array get show} {array get show2}]
 #    puts "$test expected [array get expected]"
 
     # Map filter names to show array names
