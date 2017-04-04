@@ -37,9 +37,12 @@ class Command(commands.GitissiusCommand):
         if options.filter:
             for fltr in options.filter.split(","):
                 try:
-                    key, value = fltr.split(':')
+                    # Use the first ':' to split, retain the rest in value
+                    # (neded for datetimes)
+                    lst = fltr.split(':', 1)
+                    key, value = lst[0], lst[1]
 
-                except ValueError:
+                except IndexError:
                     # filter parameters in worng format
                     print "Wrong filter argument:", fltr
                     return
