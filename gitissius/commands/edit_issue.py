@@ -28,7 +28,7 @@ class Command(commands.GitissiusCommand):
         # edit
         issue.interactive_edit()
 
-        if not common.verify("Edit issue (y)? ", default='y'):
+        if not common.verify("Save changes (y)? ", default='y'):
             print " >", "Issue discarded"
             return
 
