@@ -6,7 +6,7 @@ class Command(commands.GitissiusCommand):
     Close Issue
     """
     name = "close"
-    aliases = ["c"]
+    aliases = []
     help="Close an issue"
 
     def _execute(self, options, args):

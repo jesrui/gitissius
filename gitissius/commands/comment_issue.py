@@ -6,7 +6,7 @@ import gitissius.commands as commands
 class Command(commands.GitissiusCommand):
     """ Comment on an issue """
     name = "comment"
-    aliases = ["c"]
+    aliases = []
     help = "Comment an issue"
 
     def _help(self):
