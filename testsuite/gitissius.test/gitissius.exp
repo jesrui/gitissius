@@ -3,6 +3,7 @@ set timeout 30
 ##############################################################################
 
 # Just to warm up and load python and all needed libraries
+# XXX and to init gitissius by creating the gitissius branch
 set test "version"
 spawn $PYTHON $GI
 expect {
@@ -106,14 +107,7 @@ if {$show(id) eq {}} {
 ##############################################################################
 
 set test "list issues (only one issue)"
-if {$show(id) eq {}} {
-    unresolved $test
-} else {
-    set show_dict [dict create]
-    dict append show_dict $show(id) [dict create {*}[array get show]]
-    spawn $PYTHON $GI list
-    list_issues $test $show_dict
-}
+check_list_issues $test {list} show
 
 ##############################################################################
 
@@ -146,14 +140,7 @@ if {$show(id) eq {}} {
 ##############################################################################
 
 set test "my issues"
-if {$show(id) eq {}} {
-    unresolved $test
-} else {
-    set show_dict [dict create]
-    dict append show_dict $show(id) [dict create {*}[array get show]]
-    spawn $PYTHON $GI my
-    list_issues $test $show_dict 1
-}
+check_list_issues $test {my} -total show
 
 ##############################################################################
 
@@ -192,27 +179,12 @@ if {$show2(id) eq {}} {
 ##############################################################################
 
 set test "list issues (two issues in the database)"
-if {$show(id) eq {} || $show2(id) eq {}} {
-    unresolved $test
-} else {
-    set show_dict [dict create]
-    dict append show_dict $show(id) [dict create {*}[array get show]]
-    dict append show_dict $show2(id) [dict create {*}[array get show2]]
-    spawn $PYTHON $GI list
-    list_issues $test $show_dict 2
-}
+check_list_issues $test {list} -total show show2
 
 ##############################################################################
 
 set test "my issues (only one of the two issues of the database)"
-if {$show(id) eq {}} {
-    unresolved $test
-} else {
-    set show_dict [dict create]
-    dict append show_dict $show(id) [dict create {*}[array get show]]
-    spawn $PYTHON $GI my
-    list_issues $test $show_dict 1
-}
+check_list_issues $test {my} -total show
 
 ##############################################################################
 
@@ -237,13 +209,8 @@ if {$show2(id) eq {}} {
 }
 
 ##############################################################################
-set test "list issues (empty list)"
 
-if {$show(id) ne {} || $show2(id) ne {}} {
-    unresolved $test
-} else {
-    spawn $PYTHON $GI list
-    list_issues $test [dict create] 0
-}
+set test "list issues (empty list)"
+check_list_issues $test {list} -total
 
 ##############################################################################

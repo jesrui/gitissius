@@ -341,3 +341,61 @@ proc close_issue {test myshow} {
 
     return {}
 }
+
+#  Pop the nth element off a list. Used in options processing.
+proc Pop {varname {nth 0}} {
+    upvar $varname args
+    set r [lindex $args $nth]
+    set args [lreplace $args $nth $nth]
+    return $r
+}
+
+# spawn cmd, and call list_issues with a show_dict constructed from the show
+# arrays passed in args.
+# cmd is the git issius command whose output will be checked by list_issues.
+# args may contain the following options:
+# -total check that the listing contains exactly the number of issues passed
+#        in args.
+# -order $id_order check that the issues are listed in the order given by
+#                  the $id_order list, which contains issue ids.
+proc check_list_issues {test cmd args} {
+    global PYTHON GI
+
+    # option processing based on http://wiki.tcl.tk/1730
+
+    # setup option defaults.
+    array set opts {-total false -order {}}
+
+    # Now the option processing loop. Eats the arguments once handled and stops at '--'
+    while {[string match -* [lindex $args 0]]} {
+        switch [lindex $args 0] {
+            -total      { set opts(-total) true }
+            -order      { set opts(-order) [Pop args 1] }
+            --          { Pop args ; break }
+            default {
+                set ooo [join [lsort [array names opts -*]] ", "]
+                return -code error "bad option [lindex $args 0]: \
+                        must be one of $ooo"
+            }
+        }
+        Pop args
+    }
+#    puts "$test: Options now [array get opts] and the remaining args: $args"
+
+    set show_dict [dict create]
+    foreach s $args {
+        upvar $s show
+        if {$show(id) eq {}} {
+            unresolved "$test: no id available"
+            return
+        }
+#        parray show
+        dict append show_dict $show(id) [dict create {*}[array get show]]
+    }
+
+    set total [if {$opts(-total)} {dict size $show_dict} else {}]
+
+    global spawn_id
+    spawn $PYTHON $GI {*}$cmd
+    list_issues $test $show_dict $total $opts(-order)
+}

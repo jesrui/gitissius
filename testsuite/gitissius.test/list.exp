@@ -26,11 +26,6 @@ updated_on updated_on__exact updated_on__not updated_on__startswith
 foreach f $filter_by {
     set test "list --filter=$f"
 
-    if {$show(id) eq {} || $show2(id) eq {}} {
-        unresolved $test
-        continue
-    }
-
     # The expected show array is either show or show2 depending on the filter
     # ending.
     if {[string first __not $f] == -1 } {
@@ -44,24 +39,14 @@ foreach f $filter_by {
     regsub "__.*$" $f {} tag
 
     # launch `git issius list` command and check output 
-    set show_dict [dict create]
-    dict append show_dict $expected(id) [dict create {*}[array get expected]]
-#    puts "$test tag $tag show_dict $show_dict"
-    spawn $PYTHON $GI list --filter=$f:$show($tag)
-    list_issues $test $show_dict 1
+    check_list_issues $test "list {--filter=$f:$show($tag)}" -total expected
 }
 
 ##############################################################################
 
 set test "list --filter=id (substring)"
-if {$show(id) eq {}} {
-    unresolved $test
-} else {
-    set show_dict [dict create]
-    dict append show_dict $show(id) [dict create {*}[array get show]]
-    spawn $PYTHON $GI list --filter=id:[string range $show(id) 10 20]
-    list_issues $test $show_dict 1
-}
+check_list_issues $test "list --filter=id:[string range $show(id) 10 20]" \
+                      -total show
 
 ##############################################################################
 
@@ -79,20 +64,8 @@ set sort_order {
 
 foreach {order id_order} $sort_order {
     set test "list --sort=$order"
-
-    if {$show(id) eq {} || $show2(id) eq {}} {
-        unresolved $test
-        continue
-    }
-
-    set show_dict [dict create]
-    dict append show_dict $show(id) [dict create {*}[array get show]]
-    dict append show_dict $show2(id) [dict create {*}[array get show2]]
-
     set id_order [subst $id_order]
-
-    spawn $PYTHON $GI list --sort=$order
-    list_issues $test $show_dict 2 $id_order
+    check_list_issues $test "list --sort=$order" -total -order $id_order show show2
 }
 
 ##############################################################################
@@ -112,28 +85,13 @@ if {$show(id) eq {}} {
 
 set test "list (closed issue)"
 # closed issues aren't listed by default
-if {$show(id) eq {} || $show2(id) eq {}} {
-    unresolved $test
-} else {
-    set show_dict [dict create]
-    dict append show_dict $show2(id) [dict create {*}[array get show2]]
-    spawn $PYTHON $GI list
-    list_issues $test $show_dict 1
-}
+check_list_issues $test {list} -total show2
 
 #############################################################################
 
 set test "list --all (closed issue)"
 # `list --all` lists closed issues too
-if {$show(id) eq {} || $show2(id) eq {}} {
-    unresolved $test
-} else {
-    set show_dict [dict create]
-    dict append show_dict $show(id) [dict create {*}[array get show]]
-    dict append show_dict $show2(id) [dict create {*}[array get show2]]
-    spawn $PYTHON $GI list --all
-    list_issues $test $show_dict 2
-}
+check_list_issues $test {list --all} -total show show2
 
 #############################################################################
 
@@ -152,25 +110,10 @@ if {$show(id) eq {}} {
 
 set test "list (invalid issue)"
 # invalid issues aren't listed by default
-if {$show(id) eq {} || $show2(id) eq {}} {
-    unresolved $test
-} else {
-    set show_dict [dict create]
-    dict append show_dict $show2(id) [dict create {*}[array get show2]]
-    spawn $PYTHON $GI list
-    list_issues $test $show_dict 1
-}
+check_list_issues $test {list} -total show2
 
 #############################################################################
 
 set test "list --all (invalid issue)"
 # `list --all` lists invalid issues too
-if {$show(id) eq {} || $show2(id) eq {}} {
-    unresolved $test
-} else {
-    set show_dict [dict create]
-    dict append show_dict $show(id) [dict create {*}[array get show]]
-    dict append show_dict $show2(id) [dict create {*}[array get show2]]
-    spawn $PYTHON $GI list --all
-    list_issues $test $show_dict 2
-}
+check_list_issues $test {list --all} -total show show2

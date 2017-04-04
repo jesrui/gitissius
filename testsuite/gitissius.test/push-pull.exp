@@ -77,13 +77,6 @@ expect eof {
 ##############################################################################
 
 set test "list issues in cloned repo"
+check_list_issues $test {list} -total show show2
 
-if {$show(id) eq {} || $show2(id) eq {}} {
-    unresolved $test
-} else {
-    set show_dict [dict create]
-    dict append show_dict $show(id) [dict create {*}[array get show]]
-    dict append show_dict $show2(id) [dict create {*}[array get show2]]
-    spawn $PYTHON $GI list
-    list_issues $test $show_dict 2
-}
+##############################################################################
