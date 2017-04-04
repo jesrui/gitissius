@@ -34,6 +34,10 @@ class DbObject(object):
         """
         self._properties += [properties.Id(name='id')]
 
+        self._properties_by_name = {}
+        for prop in self._properties:
+            self._properties_by_name[prop.name] = prop
+
         for item in self._properties:
             if item.name in kwargs.keys():
                 item.set_value(kwargs[item.name])
@@ -63,11 +67,7 @@ class DbObject(object):
         assert False
 
     def get_property(self, name):
-        for prop in self._properties:
-            if prop.name == name:
-                return prop
-
-        raise Exception("Property not found")
+        return self._properties_by_name[name]
 
     def interactive_edit(self):
         """
@@ -90,11 +90,7 @@ class DbObject(object):
 
     @property
     def properties(self):
-        data = {}
-        for item in self._properties:
-            data[item.name] = item
-
-        return data
+        return self._properties_by_name.copy()
 
     def __str__(self):
         return self.get_property('title')
