@@ -77,28 +77,13 @@ def initialize():
             sys.exit(1)
 
         else:
-            # save current branch name
-            branch = gitshelve.git('name-rev', '--name-only', 'HEAD') or 'master'
-
-            # stash changes
-            try:
-                gitshelve.git('stash')
-
-            except gitshelve.GitError, error:
-                pass
-
-            # create an empty repo
-            gitshelve.git('symbolic-ref', 'HEAD', 'refs/heads/gitissius')
-            # remove all tracked files, but keep untracked ones
-            gitshelve.git('rm', '--ignore-unmatch', '-rf', '*')
-            gitshelve.git('commit', '--allow-empty', '-m', 'Initialization of gitissius')
-            gitshelve.git('checkout', branch)
-
-            try:
-                gitshelve.git('stash', 'pop')
-
-            except gitshelve.GitError, error:
-                pass
+            # https://stackoverflow.com/questions/13969050/how-to-create-a-new-empty-branch-for-a-new-project
+            # https://stackoverflow.com/a/13982124
+            # Execute the equivalent of:
+            # true | git mktree | xargs git commit-tree | xargs git branch proj-doc
+            x=gitshelve.git('mktree',input='')
+            x=gitshelve.git('commit-tree','-m', 'Initialization of gitissius',x)
+            gitshelve.git('branch','gitissius',x)
 
         # open the repo now, since init was done
         common.git_repo = gitshelve.open(branch='gitissius')
