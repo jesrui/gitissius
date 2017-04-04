@@ -80,3 +80,23 @@ set test "list issues in cloned repo"
 check_list_issues $test {list} -total show show2
 
 ##############################################################################
+
+set test "push"
+spawn $PYTHON $GI push
+expect eof {
+#    puts "$test: $expect_out(buffer)"
+    # there should be no output, except maybe some color escape sequences
+    if {[regexp "^$C$" $expect_out(buffer)]} {
+        pass $test
+    } else {
+        fail "$test: $expect_out(buffer)"
+    }
+}
+
+##############################################################################
+
+set test "list issues in origin repo"
+cd_repo repo
+check_list_issues $test {list} -total show show2
+
+##############################################################################
