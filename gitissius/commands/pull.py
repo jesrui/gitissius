@@ -43,6 +43,10 @@ class Command(commands.GitissiusCommand):
             # no worries, no stash to apply
             pass
 
+        # XXX if the pull produced a merge commit we must re-init gitshelve
+        # so that it sees commits from all merge parents.
+        common.git_repo = gitshelve.open(branch='gitissius')
+
         # build issue list cache
         common.issue_manager.update_db()
 
