@@ -14,13 +14,14 @@ foreach c $commands {
 Options:\r
   -h, --help\\s+show this help message and exit\r
 "       {
-            pass $test
+            if {[set status [exp_zero_exit_status]] ne {}} {
+                fail "$test $status"
+            } else {
+                pass $test
+            }
         }
 
         timeout     { fail "$test: timeout" }
-        eof         { fail "$test: EOF" }
-        default     { fail $test }
+        eof         { fail "$test: EOF [exp_zero_exit_status]" }
     }
 }
-
-# TODO check exit code, should be 0

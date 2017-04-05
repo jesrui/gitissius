@@ -62,6 +62,16 @@ proc update_show {myshow myiss fields} {
     }
 }
 
+# Return $template (with substitutions) if wait returns non-zero exit code,
+# empty string otherwise.
+# This proc should be called at the end of an expect block.
+proc exp_zero_exit_status {{template {(non-zero exit code: $status)}}} {
+    set status [wait]
+    if {[lindex $status 2] != 0 || [lindex $status 3] != 0} {
+        return [subst $template]
+    }
+}
+
 # Expect block for `git issius add` and `git issius edit`.
 # Execute an `add` command if $iss(id) is empty, `edit` if it is not empty.
 # myiss is a reference to the values to be entered for the issue.
@@ -122,6 +132,11 @@ proc edit_or_add_issue { test myiss {myshow show_default}} {
             exp_continue
         }
         -re [expr {$is_add ? "Created issue: ($Id)" : "Edited issue: ($Id)"}] {
+            if {[set status [exp_zero_exit_status]] ne {}} {
+                fail "$test $status"
+                return {}
+            }
+
             # check that all issue fields in array show were asked as expected
             foreach n $labels {
                 if {[array names seen $n] eq {}} {
@@ -136,8 +151,7 @@ proc edit_or_add_issue { test myiss {myshow show_default}} {
         }
 
         timeout     { fail "$test: timeout" }
-        eof         { fail "$test: EOF" }
-        default     { fail $test }
+        eof         { fail "$test: EOF [exp_zero_exit_status]" }
     }
 
     return {}
@@ -181,14 +195,17 @@ ${C}-----$C\r
 
     expect {
         -re "$issue_template" {
-            set show(created_on) $expect_out(1,string)
-            set show(updated_on) $expect_out(2,string)
-            pass $test
+            if {[set status [exp_zero_exit_status]] ne {}} {
+                fail "$test $status"
+            } else {
+                set show(created_on) $expect_out(1,string)
+                set show(updated_on) $expect_out(2,string)
+                pass $test
+            }
         }
 
         timeout     { fail "$test: timeout" }
-        eof         { fail "$test: EOF" }
-        default     { fail $test }
+        eof         { fail "$test: EOF [exp_zero_exit_status]" }
     }
 }
 
@@ -228,8 +245,7 @@ proc list_issues {test show_dict {total {}} {order {}}} {
 
     expect_after {
         timeout         { fail "$test: timeout" }
-        eof             { fail "$test: EOF" }
-        default         { fail $test }
+        eof             { fail "$test: EOF [exp_zero_exit_status]" }
     }
 
     set ids_seen [dict create]
@@ -272,18 +288,22 @@ proc list_issues {test show_dict {total {}} {order {}}} {
                     }
                 }
                 -re "$listing_footer" {
-                    # check that all issue ids in show_dict were seen correctly
-                    set ok 1
-                    foreach id [dict keys $show_dict] {
-                        if {![dict exists $ids_seen $id]} {
-                            fail "$test: expected issue id $id not found in the list"
-                            set ok 0
-                            break
+                    if {[set status [exp_zero_exit_status]] ne {}} {
+                        fail "$test $status"
+                    } else {
+                        # check that all issue ids in show_dict were seen correctly
+                        set ok 1
+                        foreach id [dict keys $show_dict] {
+                            if {![dict exists $ids_seen $id]} {
+                                fail "$test: expected issue id $id not found in the list"
+                                set ok 0
+                                break
+                            }
                         }
-                    }
 
-                    if {$ok} {
-                        pass $test
+                        if {$ok} {
+                            pass $test
+                        }
                     }
                 }
             }
@@ -307,15 +327,18 @@ proc delete_issue {test myshow} {
 
     expect_after {
         timeout         { fail "$test: timeout" }
-        eof             { fail "$test: EOF" }
-        default         { fail $test }
+        eof             { fail "$test: EOF [exp_zero_exit_status]" }
     }
 
     expect -re "Delete issue '$show(title)' \\(y\\)\\? " {
         send "y\n"
         expect -re "${C}Deleted issue$C: $show(id)" {
-            pass $test
-            set result {}
+            if {[set status [exp_zero_exit_status]] ne {}} {
+                fail "$test $status"
+            } else {
+                pass $test
+                set result {}
+            }
         }
     }
 
@@ -333,13 +356,16 @@ proc close_issue {test myshow} {
 
     expect {
         -ex "Closed issue: $show(id)" {
+            if {[set status [exp_zero_exit_status]] ne {}} {
+                fail "$test $status"
+                return {}
+            }
             pass $test
             return $show(id)
         }
 
         timeout         { fail "$test: timeout" }
-        eof             { fail "$test: EOF" }
-        default         { fail $test }
+        eof             { fail "$test: EOF [exp_zero_exit_status]" }
     }
 
     return {}

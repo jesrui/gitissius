@@ -29,7 +29,11 @@ set test "init gitissius on repo (create gitissius branch)"
 spawn $PYTHON $GI
 expect eof {
 #    puts "$test: $expect_out(buffer)"
-    pass $test
+    if {[set status [exp_zero_exit_status]] ne {}} {
+        fail "$test $status"
+    } else {
+        pass $test
+    }
 }
 
 ##############################################################################
@@ -42,7 +46,11 @@ set test "init gitissius on repo2 (copy gitissius branch)"
 spawn $PYTHON $GI
 expect eof {
 #    puts "$test: $expect_out(buffer)"
-    pass $test
+    if {[set status [exp_zero_exit_status]] ne {}} {
+        fail "$test $status"
+    } else {
+        pass $test
+    }
 }
 
 ##############################################################################
@@ -70,7 +78,7 @@ expect eof {
     if {[regexp "^$C$" $expect_out(buffer)]} {
         pass $test
     } else {
-        fail "$test: $expect_out(buffer)"
+        fail "$test: [exp_zero_exit_status] output:\n$expect_out(buffer)"
     }
 }
 
@@ -89,7 +97,7 @@ expect eof {
     if {[regexp "^$C$" $expect_out(buffer)]} {
         pass $test
     } else {
-        fail "$test: $expect_out(buffer)"
+        fail "$test: [exp_zero_exit_status] output:\n$expect_out(buffer)"
     }
 }
 

@@ -7,11 +7,16 @@ set timeout 30
 set test "version"
 spawn $PYTHON $GI
 expect {
-    -re "Gitissius v.*"	{ pass $test }
+    -re "Gitissius v.*"	{
+        if {[set status [exp_zero_exit_status]] ne {}} {
+            fail "$test $status"
+        } else {
+            pass $test
+        }
+    }
 
     timeout     { fail "$test: timeout" }
-    eof         { fail "$test: EOF" }
-    default     { fail $test }
+    eof         { fail "$test: EOF [exp_zero_exit_status]" }
 }
 
 # Now that python is loaded we can reduce the timeout.
@@ -75,8 +80,7 @@ if {$show(id) eq {}} {
 
     expect_after {
         timeout         { fail "$test: timeout" }
-        eof             { fail "$test: EOF" }
-        default         { fail $test }
+        eof             { fail "$test: EOF [exp_zero_exit_status]" }
     }
 
     expect -re "${C}Commenting on:$C ${C}$show(title)$C" {
@@ -84,7 +88,13 @@ if {$show(id) eq {}} {
             send "$iss(comment_reported_from)\n"
             expect -ex {Description (End with a line containing only '.'): } {
                 send "$iss(comment1)\n$iss(comment2)\n.\n"
-                expect -ex "Comment issue: $show(id)" { pass $test }
+                expect -ex "Comment issue: $show(id)" {
+                    if {[set status [exp_zero_exit_status]] ne {}} {
+                        fail "$test $status"
+                    } else {
+                        pass $test
+                    }
+                }
             }
         }
     }
