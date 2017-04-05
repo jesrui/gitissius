@@ -266,7 +266,7 @@ proc list_issues {test show_dict {total {}} {order {}}} {
                             set got_status          $expect_out(5,string)
                             if {[string first $got_title $title] != 0} {
                                 fail "$test: title mismatch"
-                            } elseif {$got_assigned_to ne $assigned_to} {
+                            } elseif {[string first $got_assigned_to $assigned_to] != 0} {
                                 fail "$test: assigned mismatch, got $got_assigned_to, expected $assigned_to"
                             } elseif {$got_type ne [string totitle $type]} {
                                 fail "$test: type mismatch, got $got_type, expected $type"
