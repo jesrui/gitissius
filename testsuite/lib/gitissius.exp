@@ -182,15 +182,14 @@ ${C}Description$C:$C\r
 "
 
     if {$all} {
-        set issue_template [string cat $issue_template \
-"${C}-----$C\r
+         append issue_template "${C}-----$C\r
 ${C}Reported From$C:$C ${C}$show(comment_reported_from)$C\r
 ${C}Created On$C:$C ${C}.*$C\r
 ${C}Description$C:$C\r
   $C$show(comment1)$C\r
   $C$show(comment2)$C\r
 ${C}-----$C\r
-"]
+"
     }
 
     expect {
