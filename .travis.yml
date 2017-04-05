@@ -1,0 +1,13 @@
+language: python
+python:
+    - "2.7"
+install: pip install --user colorama
+addons:
+    apt:
+        packages:
+            - dejagnu
+            - git
+script:
+    - python setup.py build
+    - cd testsuite
+    - PYTHON=python runtest --debug
