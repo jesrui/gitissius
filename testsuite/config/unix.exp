@@ -1,0 +1,8 @@
+load_lib utils.exp
+
+set PYTHON [getenv PYTHON]
+if {$PYTHON eq {}} {
+    set PYTHON python2
+}
+
+puts "PYTHON is $PYTHON"
