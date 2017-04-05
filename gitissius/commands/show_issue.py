@@ -16,10 +16,7 @@ class Command(commands.GitissiusCommand):
                                default=False,
                                help="Show all details, including comments"
                                )
-
-    def _help(self):
-        print "Usage:"
-        print "\t%s show [issue_id]" % sys.argv[0]
+        self.parser.set_usage("%prog show [--all] issue_id")
 
     def _execute(self, options, args):
         # find issue
@@ -27,7 +24,7 @@ class Command(commands.GitissiusCommand):
             issue_id = args[0]
 
         except IndexError:
-            self._help()
+            self.parser.print_usage()
             return
 
         issue = common.issue_manager.get(issue_id)

@@ -7,6 +7,11 @@ class Command(commands.GitissiusCommand):
     aliases = ["new", "add"]
     help="Create an issue"
 
+    def __init__(self):
+        super(Command, self).__init__()
+
+        self.parser.set_usage("%prog new [title]")
+
     def _execute(self, options, args):
         from gitissius.database import Issue
 

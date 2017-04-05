@@ -9,13 +9,19 @@ class Command(commands.GitissiusCommand):
     aliases = []
     help="Close an issue"
 
+    def __init__(self):
+        super(Command, self).__init__()
+
+        self.parser.set_usage("%prog close issue_id")
+
     def _execute(self, options, args):
         # find issue
         try:
             issue_id = args[0]
 
         except IndexError:
-            self.help()
+            self.parser.print_usage()
+            return
 
         issue = common.issue_manager.get(issue_id)
 

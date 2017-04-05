@@ -25,6 +25,7 @@ class Command(commands.GitissiusCommand):
                                help="List all issues, " \
                                "including closed and invalid"
                                )
+        self.parser.set_usage("%prog list [options]")
 
     def _execute(self, options, args):
         if options.all:

@@ -14,13 +14,15 @@ class Command(commands.GitissiusCommand):
         super(Command, self).__init__()
 
         self.parser.add_option("--sort",
-                               help="Sort results using key")
+                               metavar='KEY',
+                               help="Sort results using KEY")
         self.parser.add_option("--all",
                                action="store_true",
                                default=False,
                                help="Show all my issues, " \
                                "including closed and invalid"
                                )
+        self.parser.set_usage("%prog myissues [options]")
 
     def _execute(self, options, args):
         user_email = gitshelve.git('config', 'user.email')

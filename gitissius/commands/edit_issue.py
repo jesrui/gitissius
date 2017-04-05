@@ -1,6 +1,5 @@
 import gitissius.commands as commands
 import gitissius.common as common
-import gitissius.common as common
 
 class Command(commands.GitissiusCommand):
     """ Edit an issue """
@@ -9,11 +8,10 @@ class Command(commands.GitissiusCommand):
     aliases = ['e']
     help="Edit an issue"
 
-    def _help(self):
-        """
-        Edit issue help
-        """
-        print "Edit issue help"
+    def __init__(self):
+        super(Command, self).__init__()
+
+        self.parser.set_usage("%prog edit issue_id")
 
     def _execute(self, options, args):
         # find issue
@@ -21,7 +19,8 @@ class Command(commands.GitissiusCommand):
             issue_id = args[0]
 
         except IndexError:
-            self._help()
+            self.parser.print_usage()
+            return
 
         issue = common.issue_manager.get(issue_id)
 

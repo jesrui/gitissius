@@ -4,10 +4,15 @@ import gitissius.common as common
 
 class Command(commands.GitissiusCommand):
     """
-    Pull issues to repo
+    Pull issues from remote
     """
     name="pull"
     help="Pull issues from upstream"
+
+    def __init__(self):
+        super(Command, self).__init__()
+
+        self.parser.set_usage("%prog pull")
 
     def _execute(self, options, args):
         # save current branch name

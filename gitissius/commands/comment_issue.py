@@ -9,9 +9,10 @@ class Command(commands.GitissiusCommand):
     aliases = []
     help = "Comment an issue"
 
-    def _help(self):
-        print "Usage:"
-        print "\t%s comment [issue_id]" % sys.argv[0]
+    def __init__(self):
+        super(Command, self).__init__()
+
+        self.parser.set_usage("%prog comment issue_id")
 
     def _execute(self, options, args):
         from gitissius.database import Comment
@@ -21,7 +22,7 @@ class Command(commands.GitissiusCommand):
             issue_id = args[0]
 
         except IndexError:
-            self._help()
+            self.parser.print_usage()
             return
 
         issue = common.issue_manager.get(issue_id)

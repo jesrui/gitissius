@@ -1,0 +1,26 @@
+
+set commands "
+close      comment    delete     edit       list       myissues   new
+pull       push       show       update
+"
+
+foreach c $commands {
+    set test "$c --help"
+    spawn $PYTHON $GI $c --help
+
+    expect {
+        -re "Usage: gitissius.py $c\(\r| .*\r\)
+.*\r
+Options:\r
+  -h, --help\\s+show this help message and exit\r
+"       {
+            pass $test
+        }
+
+        timeout     { fail "$test: timeout" }
+        eof         { fail "$test: EOF" }
+        default     { fail $test }
+    }
+}
+
+# TODO check exit code, should be 0

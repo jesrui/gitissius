@@ -3,11 +3,16 @@ import gitissius.gitshelve as gitshelve
 
 class Command(commands.GitissiusCommand):
     """
-    Pull issues from repo, then push
+    Pull issues from remote, then push
     """
     name="update"
     aliases = ['u']
     help="Pull issues from upstream and then push"
+
+    def __init__(self):
+        super(Command, self).__init__()
+
+        self.parser.set_usage("%prog update")
 
     def _execute(self, options, args):
         from pull import Command as pull

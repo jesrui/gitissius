@@ -11,9 +11,7 @@ class Command(commands.GitissiusCommand):
     def __init__(self):
         super(Command, self).__init__()
 
-    def _help(self):
-        print "Usage:"
-        print "\t%s show [issue_id]" % sys.argv[0]
+        self.parser.set_usage("%prog delete issue_id")
 
     def _execute(self, option, args):
         # find issue
@@ -21,7 +19,7 @@ class Command(commands.GitissiusCommand):
             issue_id = args[0]
 
         except IndexError:
-            self._help()
+            self.parser.print_usage()
             return
 
         issue = common.issue_manager.get(issue_id)
