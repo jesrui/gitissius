@@ -1,3 +1,4 @@
+##############################################################################
 
 set commands "
 close      comment    delete     edit       list       myissues   new
@@ -25,3 +26,35 @@ Options:\r
         eof         { fail "$test: EOF [exp_zero_exit_status]" }
     }
 }
+
+##############################################################################
+
+set usage_dflt {^Usage: gitissius.py $cmd issue_id(\r\n$C)*$}
+
+set usage [list \
+    close       $usage_dflt \
+    comment     $usage_dflt \
+    delete      $usage_dflt \
+    edit        $usage_dflt \
+    show        {^Usage: gitissius.py show \\\[--all] issue_id(\r\n$C)*$} \
+]
+
+foreach {cmd usg} $usage {
+    set test "$cmd (called without args)"
+    spawn $PYTHON $GI $cmd
+
+    expect {
+        -re [subst $usg] {
+            if {[set status [exp_zero_exit_status]] ne {}} {
+                fail "$test $status"
+            } else {
+                pass $test
+            }
+        }
+
+        timeout     { fail "$test: timeout" }
+        eof         { fail "$test: EOF [exp_zero_exit_status]" }
+    }
+}
+
+##############################################################################
