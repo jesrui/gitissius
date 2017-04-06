@@ -9,6 +9,8 @@ addons:
             - dejagnu
             - git
 script:
+    # Set terminal width. See https://github.com/travis-ci/travis-ci/issues/5407
+    - stty cols 168
     - python setup.py build
     - cd testsuite
     - PYTHON=python runtest --debug
