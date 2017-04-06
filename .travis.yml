@@ -7,7 +7,6 @@ addons:
     apt:
         packages:
             - dejagnu
-            - git
 script:
     # Set terminal width. See https://github.com/travis-ci/travis-ci/issues/5407
     - stty cols 168
