@@ -105,17 +105,20 @@ class Issue(DbObject):
                                        'invalid':{'shortcut':'i', 'color':common.get_fore_color('WHITE')},
                                        'closed':{'shortcut':'c', 'color':common.get_fore_color('WHITE')}
                                        },
+                              order=['new','assigned','invalid','closed'],
                               default='new'),
             properties.Option(name='type',
                               options={'bug':{'shortcut':'b', 'color':common.get_fore_color('YELLOW')},
                                        'feature':{'shortcut':'f', 'color':common.get_fore_color('GREEN')}
                                        },
+                              order=['bug','feature'],
                               default='bug'),
             properties.Option(name='severity',
                               options={'high':{'shortcut':'h', 'color':common.get_fore_color('RED')},
                                        'medium':{'shortcut':'m', 'color':common.get_fore_color('YELLOW')},
                                        'low':{'shortcut':'l', 'color':common.get_fore_color('WHITE')}
                                         },
+                              order=['high','medium','low'],
                               default='low'),
             properties.Text(name='assigned_to', completion=common.get_commiters()),
             properties.Text(name='reported_from', completion=common.get_commiters(), default=common.current_user()),

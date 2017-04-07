@@ -122,11 +122,12 @@ class DbProperty(object):
                 }
 
 class Option(DbProperty):
-    def __init__(self, name, options, default=None):
+    def __init__(self, name, options, order, default=None):
         super(Option, self).__init__(name=name,
-                                     completion=options.keys(),
+                                     completion=order,
                                      default=default)
         self.options = options
+        self.order = order
 
     def repr(self, attr):
         if attr == 'value':
@@ -163,7 +164,7 @@ class Option(DbProperty):
                                 default,
                                 '/'.join(map(
                                     lambda x: self.options[x].get('shortcut',''),
-                                    self.options.keys())))
+                                    self.order)))
                                ).encode(ENCODING)
             status = raw_input(prompt).decode(ENCODING)
 

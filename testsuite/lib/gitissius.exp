@@ -116,7 +116,7 @@ proc edit_or_add_issue { test myiss {myshow show_default}} {
             set seen(assigned_to) 1
             exp_continue
         }
-        -re "Status \\($show(status)\\) \\\[.*\\\]: " {
+        -ex "Status ($show(status)) \[n/a/i/c\]: " {
             send "[string index $iss(status) 0]\n"
             set seen(status) 1
             exp_continue
